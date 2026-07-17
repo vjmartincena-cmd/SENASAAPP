@@ -38,6 +38,14 @@ export const soundSystem = {
     }, 150);
   },
   
+  // Animal negativo encontrado correctamente
+  playNegativeMatch: () => {
+    playTone(523.25, 'sine', 0.1, 0.5); // C5
+    setTimeout(() => {
+      playTone(659.25, 'sine', 0.15, 0.5); // E5
+    }, 120);
+  },
+  
   // Alarma/Sirena: Encontró la vaca que se estaba buscando (Ej. positiva en Brucelosis)
   playAlarm: () => {
     const playSirenOscillation = (freq1: number, freq2: number, timeOffset: number) => {

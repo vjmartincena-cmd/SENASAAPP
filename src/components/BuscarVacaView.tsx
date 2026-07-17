@@ -159,7 +159,7 @@ export function BuscarVacaView() {
       setLastEntry(entry);
       setScannedLog(prev => [entry, ...prev]);
     } else {
-      soundSystem.playSuccess();
+      soundSystem.playNegativeMatch();
       const entry: ScannedEntry = { id: code, time, status: 'negative' };
       setLastEntry(entry);
       setScannedLog(prev => [entry, ...prev]);
