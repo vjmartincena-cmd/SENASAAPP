@@ -64,8 +64,8 @@ export function BuscarVacaView() {
     if (!selectedSesionId) { setSesionMap({}); return; }
     db.getNovedadesBySession(selectedSesionId).then(novs => {
       const map: Record<string, number> = {};
-      (novs.filter(n => n.type === 'Sanidad') as NovedadSanidad[]).forEach((s, i) => {
-        map[s.animalId] = i + 1; // tubeNumber = posición en la sesión
+      (novs.filter(n => n.type === 'Sanidad') as NovedadSanidad[]).forEach((s) => {
+        map[s.animalId] = s.tubeNumber;
       });
       setSesionMap(map);
     });
