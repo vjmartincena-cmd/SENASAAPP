@@ -41,9 +41,9 @@ function App() {
         
         // Opcional: si el usuario se acaba de loguear y hay datos locales, podríamos preguntar si desea migrarlos.
         // Por ahora, se puede hacer la migración manualmente desde Configuración.
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to init DB", err);
-        alert("Error al inicializar la base de datos.");
+        alert("Error al inicializar la base de datos: " + (err.message || err.toString()));
       }
     };
 
