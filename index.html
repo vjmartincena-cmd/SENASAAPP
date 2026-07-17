@@ -1,130 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENASA - Gestión de Ganado (Módulo Venta)</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SENASA - Gestión de Ganado y Cría</title>
     <!-- Fuente Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Iconos Lucide -->
+    <!-- Iconos Lucide (por si se necesitan fuera de React, aunque React usa el paquete) -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Librería XLSX para exportar Excel -->
+    <!-- Librería XLSX (opcional si se usa CDN, React usa el import npm) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-    <!-- Estilos de la aplicación -->
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="app-container">
-        <header class="header glass-panel">
-            <div class="header-content">
-                <h1>SENASA - Módulo Venta</h1>
-                <div class="stats">
-                    <span class="stat-badge">Total Escaneados: <strong id="totalCount">0</strong></span>
-                </div>
-            </div>
-        </header>
-
-        <main class="main-content">
-            <div class="grid-layout">
-                <!-- Panel Izquierdo: Configuración y Scanner -->
-                <div class="left-panel flex-col gap-6">
-                    
-                    <section class="settings-panel glass-panel p-6">
-                        <div class="panel-header flex items-center gap-2 mb-4">
-                            <i data-lucide="settings" class="text-accent"></i>
-                            <h2 class="text-lg font-semibold">Datos a asignar</h2>
-                        </div>
-                        <p class="text-sm text-muted mb-4">
-                            Estos datos se asignarán automáticamente al escanear la próxima caravana.
-                        </p>
-                        
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Sexo</label>
-                                <select id="sexSelect" class="input-field">
-                                    <option value="M" selected>Macho (M)</option>
-                                    <option value="H">Hembra (H)</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Raza</label>
-                                <select id="breedSelect" class="input-field">
-                                    <option value="GC">Ganado Cruza (GC)</option>
-                                    <option value="H">Hereford (H)</option>
-                                    <option value="AA" selected>Aberdeen Angus (AA)</option>
-                                    <option value="BG">Brangus (BG)</option>
-                                    <option value="BF">Braford (BF)</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Fecha Nacimiento</label>
-                                <input type="text" id="dateInput" class="input-field" placeholder="MM/YYYY">
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="scanner-panel glass-panel p-6 text-center">
-                        <i data-lucide="scan-line" class="text-accent mb-4 mx-auto icon-large"></i>
-                        <h2 class="text-xl mb-2">Escanear Caravana</h2>
-                        <p class="text-sm text-muted mb-4">
-                            Pase el lector. El código de 15 dígitos ingresará aquí.
-                        </p>
-                        <input type="text" id="scannerInput" class="scanner-input" placeholder="Esperando lectura..." autofocus>
-                        <div id="errorMessage" class="error-message mt-2 hidden"></div>
-                    </section>
-
-                    <section class="actions-panel glass-panel p-6">
-                        <h2 class="text-lg font-semibold mb-4">Exportar Lote</h2>
-                        <div class="flex-col gap-4">
-                            <button id="btnExportTxt" class="btn btn-primary w-full" disabled>
-                                <i data-lucide="file-text"></i> Generar Archivo TXT (SENASA)
-                            </button>
-                            <button id="btnExportExcel" class="btn btn-success w-full" disabled>
-                                <i data-lucide="download"></i> Generar Planilla Excel (Registro)
-                            </button>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- Panel Derecho: Lista de Animales -->
-                <div class="right-panel glass-panel flex-col">
-                    <div class="panel-header flex justify-between items-center p-6 border-b">
-                        <h2 class="text-lg font-semibold">Animales Escaneados (<span id="tableTitleCount">0</span>)</h2>
-                        <button id="btnClearList" class="btn btn-danger hidden">
-                            <i data-lucide="trash-2"></i> Limpiar Lote
-                        </button>
-                    </div>
-                    
-                    <div class="table-container">
-                        <div id="emptyState" class="empty-state text-muted text-center p-10">
-                            <i data-lucide="scan-line" class="mx-auto mb-4 opacity-50 icon-large"></i>
-                            <p>Aún no se han escaneado caravanas en este lote.</p>
-                        </div>
-                        
-                        <table id="animalsTable" class="animals-table hidden">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Caravana</th>
-                                    <th>Sexo</th>
-                                    <th>Raza</th>
-                                    <th>Fecha Nac.</th>
-                                    <th>Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody">
-                                <!-- Filas generadas dinámicamente -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- Script de la aplicación -->
-    <script src="app.js"></script>
-</body>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

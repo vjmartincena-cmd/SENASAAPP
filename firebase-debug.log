@@ -1,0 +1,42 @@
+[debug] [2026-06-27T23:12:23.431Z] ----------------------------------------------------------------------
+[debug] [2026-06-27T23:12:23.434Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\campo\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init
+[debug] [2026-06-27T23:12:23.434Z] CLI Version:   15.22.3
+[debug] [2026-06-27T23:12:23.434Z] Platform:      win32
+[debug] [2026-06-27T23:12:23.434Z] Node Version:  v24.16.0
+[debug] [2026-06-27T23:12:23.434Z] Detected Agent: unknown
+[debug] [2026-06-27T23:12:23.434Z] Time:          Sat Jun 27 2026 20:12:23 GMT-0300 (hora estándar de Argentina)
+[debug] [2026-06-27T23:12:23.434Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  D:\ANTIGRAVITY\SENASA
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[info] 
+=== Dataconnect Setup
+[info] +  dataconnect: Detected existing apps . (web) 
+[info] +  Wrote dataconnect\dataconnect.yaml 
+[info] +  Wrote dataconnect\seed_data.gql 
+[info] +  Wrote dataconnect\schema\schema.gql 
+[info] +  Wrote dataconnect\example\connector.yaml 
+[info] +  Wrote dataconnect\example\queries.gql 
+[info] +  Wrote dataconnect\example\mutations.gql 
+[info] +  Wrote dataconnect\example\connector.yaml 
+[info] i  dataconnect: Installing the generated SDKs ... 
+[info] i  dataconnect: downloading dataconnect-emulator-3.4.14.exe... {"metadata":{"emulator":{"name":"dataconnect"},"message":"downloading dataconnect-emulator-3.4.14.exe..."}}
+[debug] [2026-06-27T23:13:53.545Z] >>> [apiv2][query] GET https://storage.googleapis.com/firemat-preview-drop/emulator/dataconnect-emulator-windows-amd64-v3.4.14 
+[debug] [2026-06-27T23:13:53.999Z] <<< [apiv2][status] GET https://storage.googleapis.com/firemat-preview-drop/emulator/dataconnect-emulator-windows-amd64-v3.4.14 200
+[debug] [2026-06-27T23:13:53.999Z] <<< [apiv2][body] GET https://storage.googleapis.com/firemat-preview-drop/emulator/dataconnect-emulator-windows-amd64-v3.4.14 [stream]
+[debug] [2026-06-27T23:14:19.874Z] defaultcredentials: writing to file C:\Users\campo\AppData\Roaming\firebase\vjmartincena_gmail_com_application_default_credentials.json

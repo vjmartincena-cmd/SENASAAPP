@@ -94,6 +94,9 @@ scannerInput.addEventListener('keydown', (e) => {
         animals.unshift(newAnimal);
         saveAnimals();
 
+        // Auto-incrementar: cargar el siguiente número en el campo
+        const nextCode = String(BigInt(code) + 1n).padStart(15, '0');
+        scannerInput.value = nextCode;
         scannerInput.select();
         hideError();
         updateUI();
@@ -181,23 +184,32 @@ btnClearList.addEventListener('click', () => {
 btnExportTxt.addEventListener('click', () => {
     if (animals.length === 0) return;
 
-    // Formato SENASA: CARAVANA-SEXO-RAZA-MM/YYYY;
-    // Como queremos exportar del más viejo al más nuevo (o viceversa), respetamos el orden en que lo mostramos (o lo invertimos si es necesario).
-    // Exportaremos tal cual (último escaneado primero) o invertido (primer escaneado primero). Usualmente es mejor el orden de escaneo.
-    // animals está ordenado: [reciente, más viejo]
     const sortedAnimals = [...animals].reverse();
+    const dateStr = new Date().toISOString().split('T')[0];
 
+    // Archivo 1: Formato Completo
     const txtContent = sortedAnimals.map(a => `${a.id}-${a.sex}-${a.breed}-${a.birthDate};`).join('\n');
+    const blob1 = new Blob([txtContent], { type: 'text/plain' });
+    const url1 = URL.createObjectURL(blob1);
+    const link1 = document.createElement('a');
+    link1.href = url1;
+    link1.download = `SENASA_Lote_${dateStr}.txt`;
+    document.body.appendChild(link1);
+    link1.click();
+    document.body.removeChild(link1);
+    URL.revokeObjectURL(url1);
 
-    const blob = new Blob([txtContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `SENASA_Lote_${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Archivo 2: Solo Caravanas (separadas por ;)
+    const triContent = sortedAnimals.map(a => a.id).join(';');
+    const blob2 = new Blob([triContent], { type: 'text/plain' });
+    const url2 = URL.createObjectURL(blob2);
+    const link2 = document.createElement('a');
+    link2.href = url2;
+    link2.download = `senasa_tri_${dateStr}.txt`;
+    document.body.appendChild(link2);
+    link2.click();
+    document.body.removeChild(link2);
+    URL.revokeObjectURL(url2);
 });
 
 btnExportExcel.addEventListener('click', () => {
