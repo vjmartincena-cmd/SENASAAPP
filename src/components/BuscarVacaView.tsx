@@ -189,7 +189,7 @@ export function BuscarVacaView() {
           {/* Selector de sesión */}
           <div className="form-group">
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Layers size={14} style={{ color: '#34d399' }} /> Sesión de Sanidad
+              <Layers size={14} style={{ color: '#15803d' }} /> Sesión de Sanidad
             </label>
             <div style={{ position: 'relative' }}>
               <select
@@ -205,15 +205,15 @@ export function BuscarVacaView() {
                   </option>
                 ))}
               </select>
-              <ChevronDown size={15} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
+              <ChevronDown size={15} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-color)', pointerEvents: 'none' }} />
             </div>
             {selectedSesionId && (
-              <p style={{ fontSize: '0.75rem', color: '#34d399', marginTop: '0.35rem', fontWeight: 600 }}>
+              <p style={{ fontSize: '0.75rem', color: '#15803d', marginTop: '0.35rem', fontWeight: 600 }}>
                 ✓ {sesionAnimalCount} animales cargados de la sesión
               </p>
             )}
             {sanidadSesiones.length === 0 && (
-              <p style={{ fontSize: '0.75rem', color: '#475569', marginTop: '0.3rem' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-color)', marginTop: '0.3rem' }}>
                 No hay sesiones de Sanidad registradas.
               </p>
             )}
@@ -246,7 +246,7 @@ export function BuscarVacaView() {
                     display: 'flex', alignItems: 'center', gap: '0.3rem',
                     background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
                     borderRadius: '6px', padding: '0.25rem 0.6rem',
-                    color: '#f87171', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
+                    color: '#dc2626', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
                   }}
                 >
                   <Trash2 size={13} /> Limpiar
@@ -262,7 +262,7 @@ export function BuscarVacaView() {
                   style={{
                     background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)',
                     borderRadius: '99px', padding: '0.2rem 0.7rem',
-                    color: '#f87171', fontWeight: 700, fontSize: '0.82rem',
+                    color: '#dc2626', fontWeight: 700, fontSize: '0.82rem',
                     cursor: 'pointer',
                   }}
                 >
@@ -277,42 +277,42 @@ export function BuscarVacaView() {
 
           {/* Resumen de sesión de búsqueda */}
           {scannedLog.length > 0 && (
-            <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.05)', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.15)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <History size={13} /> Resumen
                 </span>
                 <button
                   onClick={clearScanned}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '0.2rem 0.5rem', color: '#64748b', cursor: 'pointer', fontSize: '0.72rem' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'transparent', border: '1px solid rgba(0,0,0,0.15)', borderRadius: '6px', padding: '0.2rem 0.5rem', color: 'var(--text-color)', cursor: 'pointer', fontSize: '0.72rem' }}
                 >
                   <Trash2 size={11} /> Limpiar
                 </button>
               </div>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <div style={{ textAlign: 'center', minWidth: '50px' }}>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f87171' }}>{positiveCount}</div>
-                  <div style={{ fontSize: '0.62rem', color: '#64748b' }}>POSITIVAS</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#dc2626' }}>{positiveCount}</div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-color)' }}>POSITIVAS</div>
                 </div>
                 <div style={{ textAlign: 'center', minWidth: '50px' }}>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#34d399' }}>{negativeCount}</div>
-                  <div style={{ fontSize: '0.62rem', color: '#64748b' }}>NEGATIVAS</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#15803d' }}>{negativeCount}</div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-color)' }}>NEGATIVAS</div>
                 </div>
                 {notInSessionCount > 0 && (
                   <div style={{ textAlign: 'center', minWidth: '50px' }}>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f59e0b' }}>{notInSessionCount}</div>
-                    <div style={{ fontSize: '0.62rem', color: '#64748b' }}>FUERA SESIÓN</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#92400e' }}>{notInSessionCount}</div>
+                    <div style={{ fontSize: '0.62rem', color: 'var(--text-color)' }}>FUERA SESIÓN</div>
                   </div>
                 )}
                 {duplicateCount > 0 && (
                   <div style={{ textAlign: 'center', minWidth: '50px' }}>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f97316' }}>{duplicateCount}</div>
-                    <div style={{ fontSize: '0.62rem', color: '#64748b' }}>DUPLICADAS</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#b45309' }}>{duplicateCount}</div>
+                    <div style={{ fontSize: '0.62rem', color: 'var(--text-color)' }}>DUPLICADAS</div>
                   </div>
                 )}
                 <div style={{ textAlign: 'center', minWidth: '50px' }}>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#60a5fa' }}>{scannedLog.length}</div>
-                  <div style={{ fontSize: '0.62rem', color: '#64748b' }}>TOTAL</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1d4ed8' }}>{scannedLog.length}</div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-color)' }}>TOTAL</div>
                 </div>
               </div>
             </div>
@@ -339,7 +339,7 @@ export function BuscarVacaView() {
             <p className="text-sm text-muted mb-4">
               {selectedSesionId
                 ? `Sesión: ${selectedSesion?.label || formatDate(selectedSesion?.date || '')} · ${sesionAnimalCount} animales`
-                : <span style={{ color: '#f59e0b' }}>⚠️ Seleccioná una sesión de Sanidad</span>}
+                : <span style={{ color: '#92400e' }}>⚠️ Seleccioná una sesión de Sanidad</span>}
             </p>
 
             <input
@@ -358,7 +358,7 @@ export function BuscarVacaView() {
               if (status === 'positive') return (
                 <div style={{ width: '100%', maxWidth: '24rem', padding: '1rem', borderRadius: '10px', background: 'rgba(239,68,68,0.25)', border: '2px solid #ef4444' }}>
                   <p className="font-mono text-lg font-bold mb-1">{id}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#f87171', fontWeight: 700, fontSize: '1.1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#dc2626', fontWeight: 700, fontSize: '1.1rem' }}>
                     <AlertCircle size={22} /> ¡POSITIVA! SEPARAR
                   </div>
                   <p style={{ fontSize: '0.75rem', color: '#fca5a5', marginTop: '0.4rem' }}>
@@ -369,7 +369,7 @@ export function BuscarVacaView() {
               if (status === 'negative') return (
                 <div style={{ width: '100%', maxWidth: '24rem', padding: '1rem', borderRadius: '10px', background: 'rgba(52,211,153,0.12)', border: '1.5px solid #34d399' }}>
                   <p className="font-mono text-lg font-bold mb-1">{id}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#34d399', fontWeight: 700, fontSize: '1.1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#15803d', fontWeight: 700, fontSize: '1.1rem' }}>
                     <CheckCircle2 size={22} /> NEGATIVA — Pasa
                   </div>
                   <p style={{ fontSize: '0.75rem', color: '#6ee7b7', marginTop: '0.4rem' }}>
@@ -380,7 +380,7 @@ export function BuscarVacaView() {
               if (status === 'not_in_session') return (
                 <div style={{ width: '100%', maxWidth: '24rem', padding: '1rem', borderRadius: '10px', background: 'rgba(245,158,11,0.15)', border: '2px solid #f59e0b' }}>
                   <p className="font-mono text-lg font-bold mb-1">{id}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#fbbf24', fontWeight: 700, fontSize: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#92400e', fontWeight: 700, fontSize: '1rem' }}>
                     <AlertTriangle size={22} /> NO ESTÁ EN ESTA SESIÓN
                   </div>
                   <p style={{ fontSize: '0.75rem', color: '#fde68a', marginTop: '0.4rem' }}>
@@ -403,22 +403,22 @@ export function BuscarVacaView() {
           {/* Log de escaneos */}
           {scannedLog.length > 0 && (
             <div className="glass-panel p-4" style={{ maxHeight: '320px', overflowY: 'auto' }}>
-              <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-color)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <History size={14} /> Historial ({scannedLog.length})
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                 {scannedLog.map((entry, idx) => {
                   const cfg = {
-                    positive:       { clr: '#f87171', bg: 'rgba(248,113,113,0.08)', label: '🔴 POSITIVA' },
-                    negative:       { clr: '#34d399', bg: 'rgba(52,211,153,0.06)',  label: '🟢 NEGATIVA' },
-                    not_in_session: { clr: '#f59e0b', bg: 'rgba(245,158,11,0.08)',  label: '🟡 FUERA SESIÓN' },
-                    duplicate:      { clr: '#f97316', bg: 'rgba(249,115,22,0.08)',  label: '🟠 DUPLICADO' },
+                    positive:       { clr: '#dc2626', bg: 'rgba(248,113,113,0.08)', label: '🔴 POSITIVA' },
+                    negative:       { clr: '#15803d', bg: 'rgba(52,211,153,0.06)',  label: '🟢 NEGATIVA' },
+                    not_in_session: { clr: '#92400e', bg: 'rgba(245,158,11,0.08)',  label: '🟡 FUERA SESIÓN' },
+                    duplicate:      { clr: '#b45309', bg: 'rgba(249,115,22,0.08)',  label: '🟠 DUPLICADO' },
                   }[entry.status];
                   return (
                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0.75rem', background: cfg.bg, borderRadius: '7px', fontSize: '0.8rem', border: `1px solid ${cfg.clr}20` }}>
-                      <span style={{ fontFamily: 'monospace', color: '#e2e8f0', flex: 1, fontWeight: 600 }}>{entry.id}</span>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--text-color)', flex: 1, fontWeight: 600 }}>{entry.id}</span>
                       <span style={{ color: cfg.clr, fontWeight: 700, fontSize: '0.72rem', flexShrink: 0 }}>{cfg.label}</span>
-                      <span style={{ color: '#475569', fontSize: '0.7rem', flexShrink: 0 }}>{entry.time}</span>
+                      <span style={{ color: 'var(--text-color)', fontSize: '0.7rem', flexShrink: 0 }}>{entry.time}</span>
                     </div>
                   );
                 })}

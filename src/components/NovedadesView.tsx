@@ -20,9 +20,9 @@ const TAB_LABEL: Record<TabType, string> = {
 };
 
 const TAB_COLOR: Record<TabType, string> = {
-  Sanidad: '#34d399',
-  IA: '#60a5fa',
-  Tacto: '#f472b6',
+  Sanidad: '#15803d',
+  IA: '#1d4ed8',
+  Tacto: '#8a1a49',
 };
 
 function formatDate(d: string) {
@@ -388,13 +388,13 @@ export function NovedadesView({ config }: NovedadesViewProps) {
           {currentSession ? (
             <div style={{
               display: 'flex', alignItems: 'center', gap: '0.6rem',
-              background: 'rgba(0,0,0,0.25)',
+              background: 'rgba(0,0,0,0.05)',
               border: `1px solid ${TAB_COLOR[activeTab]}40`,
               borderRadius: '12px',
               padding: '0.4rem 1rem',
             }}>
               <Layers size={14} style={{ color: TAB_COLOR[activeTab] }} />
-              <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-color)' }}>
                 {currentSession.label || formatDate(currentSession.date)}
               </span>
             </div>
@@ -408,11 +408,11 @@ export function NovedadesView({ config }: NovedadesViewProps) {
             borderRadius: '12px',
             padding: '0.4rem 1rem',
           }}>
-            <Hash size={15} style={{ color: '#60a5fa' }} />
-            <span style={{ fontSize: '0.78rem', color: '#93c5fd', fontWeight: 500 }}>Sesión:</span>
+            <Hash size={15} style={{ color: '#1d4ed8' }} />
+            <span style={{ fontSize: '0.78rem', color: '#1d4ed8', fontWeight: 500 }}>Sesión:</span>
             <span style={{
               fontSize: '1.6rem', fontWeight: 800,
-              color: sessionCount === 0 ? '#475569' : '#60a5fa',
+              color: sessionCount === 0 ? '#475569' : '#1d4ed8',
               fontVariantNumeric: 'tabular-nums',
               minWidth: '2.2rem', textAlign: 'center', lineHeight: 1,
             }}>
@@ -430,7 +430,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
               border: '1px solid rgba(52,211,153,0.3)',
               borderRadius: '10px',
               padding: '0.45rem 0.9rem',
-              color: '#34d399',
+              color: '#15803d',
               cursor: 'pointer',
               fontSize: '0.8rem',
               fontWeight: 600,
@@ -457,12 +457,12 @@ export function NovedadesView({ config }: NovedadesViewProps) {
             {!currentSession && (
               <div style={{
                 textAlign: 'center', padding: '2rem 1rem',
-                background: 'rgba(0,0,0,0.2)', borderRadius: '12px',
-                border: '1px dashed rgba(255,255,255,0.1)',
+                background: 'rgba(0,0,0,0.05)', borderRadius: '12px',
+                border: '1px dashed rgba(0,0,0,0.15)',
                 marginBottom: '1rem',
               }}>
-                <Layers size={36} style={{ color: '#475569', margin: '0 auto 0.75rem' }} />
-                <p style={{ color: '#64748b', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                <Layers size={36} style={{ color: 'var(--text-color)', margin: '0 auto 0.75rem' }} />
+                <p style={{ color: 'var(--text-color)', marginBottom: '1rem', fontSize: '0.9rem' }}>
                   No hay sesión activa
                 </p>
                 <button
@@ -498,7 +498,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                       <span style={{
                         width: '8px', height: '8px',
-                        background: '#60a5fa',
+                        background: '#1d4ed8',
                         borderRadius: '50%',
                         display: 'inline-block',
                         flexShrink: 0,
@@ -507,7 +507,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                       <span style={{
                         marginLeft: 'auto',
                         fontSize: '0.72rem',
-                        color: '#60a5fa',
+                        color: '#1d4ed8',
                         fontWeight: 600,
                         background: 'rgba(96,165,250,0.15)',
                         padding: '0.1rem 0.5rem',
@@ -552,7 +552,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.6rem',
-                    color: '#fca5a5',
+                    color: '#dc2626',
                     fontWeight: 600,
                     fontSize: '0.88rem',
                     animation: 'pulse 0.5s ease',
@@ -564,9 +564,9 @@ export function NovedadesView({ config }: NovedadesViewProps) {
 
                 {currentAnimal && (
 
-                  <div className="animal-info p-4 bg-darker rounded-lg border border-accent/20 mb-6">
+                  <div className="animal-info p-4 bg-white rounded-lg border border-accent/20 mb-6">
                     <p className="text-sm text-muted mb-1">Animal Seleccionado:</p>
-                    <p className="font-mono text-lg font-bold text-white">{currentAnimal.id}</p>
+                    <p className="font-mono text-lg font-bold text-accent">{currentAnimal.id}</p>
                     <div className="flex gap-4 mt-2 text-sm text-muted">
                       <span>Sexo: {currentAnimal.sex}</span>
                       <span>Raza: {currentAnimal.breed}</span>
@@ -588,10 +588,10 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.6rem',
-                        color: '#fde68a',
+                        color: '#92400e',
                         fontSize: '0.82rem',
                       }}>
-                        <AlertTriangle size={16} style={{ color: '#fbbf24', flexShrink: 0 }} />
+                        <AlertTriangle size={16} style={{ color: '#92400e', flexShrink: 0 }} />
                         <span>{iaWarning}</span>
                       </div>
                     )}
@@ -615,7 +615,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                       padding: '0.9rem',
                       marginBottom: '0.75rem',
                     }}>
-                      <p style={{ fontSize: '0.78rem', color: '#6ee7b7', fontWeight: 700, marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <p style={{ fontSize: '0.78rem', color: '#15803d', fontWeight: 700, marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         🤱 Preñada — ¿Origen?
                       </p>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -626,7 +626,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                             border: '1.5px solid rgba(52,211,153,0.5)',
                             borderRadius: '10px',
                             padding: '0.7rem 0.5rem',
-                            color: '#34d399',
+                            color: '#15803d',
                             fontWeight: 700,
                             fontSize: '0.85rem',
                             cursor: 'pointer',
@@ -644,7 +644,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                             border: '1.5px solid rgba(96,165,250,0.4)',
                             borderRadius: '10px',
                             padding: '0.7rem 0.5rem',
-                            color: '#60a5fa',
+                            color: '#1d4ed8',
                             fontWeight: 700,
                             fontSize: '0.85rem',
                             cursor: 'pointer',
@@ -655,7 +655,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                         </button>
                       </div>
                       {!lastIAData && (
-                        <p style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.4rem' }}>
+                        <p style={{ fontSize: '0.72rem', color: 'var(--text-color)', marginTop: '0.4rem' }}>
                           Sin IA reciente registrada — si está preñada, será por Repaso.
                         </p>
                       )}
@@ -668,7 +668,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                       borderRadius: '12px',
                       padding: '0.9rem',
                     }}>
-                      <p style={{ fontSize: '0.78rem', color: '#fca5a5', fontWeight: 700, marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <p style={{ fontSize: '0.78rem', color: '#dc2626', fontWeight: 700, marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         🔴 Resultado Negativo
                       </p>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -679,7 +679,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                             border: '1.5px solid rgba(239,68,68,0.4)',
                             borderRadius: '10px',
                             padding: '0.7rem 0.5rem',
-                            color: '#f87171',
+                            color: '#dc2626',
                             fontWeight: 700,
                             fontSize: '0.85rem',
                             cursor: 'pointer',
@@ -695,7 +695,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                             border: '1.5px solid rgba(251,191,36,0.35)',
                             borderRadius: '10px',
                             padding: '0.7rem 0.5rem',
-                            color: '#fbbf24',
+                            color: '#92400e',
                             fontWeight: 700,
                             fontSize: '0.85rem',
                             cursor: 'pointer',
@@ -724,10 +724,10 @@ export function NovedadesView({ config }: NovedadesViewProps) {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             marginBottom: '0.25rem',
           }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#e2e8f0' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-color)' }}>
               Sesiones de {activeTab === 'IA' ? 'Inseminación (IA)' : activeTab}
             </h2>
-            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-color)' }}>
               {panelSessions.length} sesión{panelSessions.length !== 1 ? 'es' : ''}
             </span>
           </div>
@@ -735,10 +735,10 @@ export function NovedadesView({ config }: NovedadesViewProps) {
           {panelSessions.length === 0 && (
             <div style={{
               textAlign: 'center', padding: '3rem 1rem',
-              background: 'rgba(0,0,0,0.15)',
-              border: '1px dashed rgba(255,255,255,0.07)',
+              background: 'rgba(0,0,0,0.03)',
+              border: '1px dashed rgba(0,0,0,0.15)',
               borderRadius: '14px',
-              color: '#475569',
+              color: 'var(--text-color)',
             }}>
               <Calendar size={36} style={{ margin: '0 auto 0.75rem', opacity: 0.5 }} />
               <p>No hay sesiones registradas todavía.</p>
@@ -756,11 +756,11 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                 key={ses.id}
                 style={{
                   background: isActive
-                    ? `linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(0,0,0,0.2) 100%)`
-                    : 'rgba(0,0,0,0.18)',
+                    ? `linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(0,0,0,0.05) 100%)`
+                    : 'rgba(0,0,0,0.04)',
                   border: isActive
                     ? `1.5px solid ${color}60`
-                    : '1px solid rgba(255,255,255,0.07)',
+                    : '1px solid rgba(0,0,0,0.15)',
                   borderRadius: '14px',
                   overflow: 'hidden',
                   transition: 'border-color 0.2s',
@@ -804,7 +804,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                         {ses.label || `Sesión del ${formatDate(ses.date)}`}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.78rem', color: '#64748b' }}>
+                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.78rem', color: 'var(--text-color)' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                         <Calendar size={11} /> {formatDate(ses.date)}
                       </span>
@@ -816,8 +816,8 @@ export function NovedadesView({ config }: NovedadesViewProps) {
 
                   {/* Contador */}
                   <div style={{
-                    background: isActive ? `${color}25` : 'rgba(0,0,0,0.2)',
-                    border: `1px solid ${isActive ? color + '50' : 'rgba(255,255,255,0.08)'}`,
+                    background: isActive ? `${color}25` : 'rgba(0,0,0,0.05)',
+                    border: `1px solid ${isActive ? color + '50' : 'rgba(0,0,0,0.15)'}`,
                     borderRadius: '10px',
                     padding: '0.3rem 0.8rem',
                     textAlign: 'center',
@@ -826,18 +826,18 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                     <div style={{ fontSize: '1.4rem', fontWeight: 800, color: isActive ? color : '#475569', lineHeight: 1 }}>
                       {isActive ? sessionCount : ses.count}
                     </div>
-                    <div style={{ fontSize: '0.6rem', color: '#64748b', marginTop: '0.1rem' }}>animales</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-color)', marginTop: '0.1rem' }}>animales</div>
                   </div>
 
                   {/* Expand icon */}
-                  <div style={{ color: '#475569', flexShrink: 0 }}>
+                  <div style={{ color: 'var(--text-color)', flexShrink: 0 }}>
                     {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                   </div>
                 </button>
 
                 {/* Detalle expandido */}
                 {isExpanded && (
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '0.75rem 1.1rem' }}>
+                  <div style={{ borderTop: '1px solid rgba(0,0,0,0.15)', padding: '0.75rem 1.1rem' }}>
                     {/* Botón continuar si no es la activa */}
                     {!isActive && (
                       <button
@@ -864,7 +864,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
 
                     {/* Lista de novedades */}
                     {novs.length === 0 ? (
-                      <p style={{ color: '#475569', fontSize: '0.82rem', padding: '0.5rem 0' }}>
+                      <p style={{ color: 'var(--text-color)', fontSize: '0.82rem', padding: '0.5rem 0' }}>
                         Sin registros cargados aún.
                       </p>
                     ) : (
@@ -873,7 +873,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                           <div key={nov.id} style={{
                             display: 'flex', alignItems: 'center', gap: '0.75rem',
                             padding: '0.5rem 0.75rem',
-                            background: 'rgba(0,0,0,0.2)',
+                            background: 'rgba(0,0,0,0.05)',
                             borderRadius: '8px',
                             fontSize: '0.82rem',
                           }}>
@@ -892,7 +892,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                               {nov.type === 'Sanidad' ? nov.tubeNumber : idx + 1}
                             </span>
                             {/* RFID */}
-                            <span style={{ fontFamily: 'monospace', color: '#e2e8f0', fontWeight: 600, flex: 1 }}>
+                            <span style={{ fontFamily: 'monospace', color: 'var(--text-color)', fontWeight: 600, flex: 1 }}>
                               {nov.animalId}
                             </span>
                             {/* Detalle específico */}
@@ -901,7 +901,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                               const isIA = r === 'Preñada IA';
                               const isRepaso = r === 'Preñada Repaso';
                               const isVacia = r === 'Vacía';
-                              const clr = isIA ? '#34d399' : isRepaso ? '#60a5fa' : isVacia ? '#f87171' : '#fbbf24';
+                              const clr = isIA ? '#15803d' : isRepaso ? '#1d4ed8' : isVacia ? '#dc2626' : '#92400e';
                               const bg  = isIA ? '#34d39918' : isRepaso ? '#60a5fa18' : isVacia ? '#f8717118' : '#fbbf2418';
                               return (
                                 <span style={{ fontSize: '0.72rem', fontWeight: 700, color: clr, background: bg, padding: '0.1rem 0.5rem', borderRadius: '99px' }}>
@@ -910,10 +910,10 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                               );
                             })()}
                             {nov.type === 'IA' && (
-                              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{nov.bull}</span>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-color)' }}>{nov.bull}</span>
                             )}
                             {/* Hora */}
-                            <span style={{ color: '#475569', fontSize: '0.72rem', flexShrink: 0 }}>
+                            <span style={{ color: 'var(--text-color)', fontSize: '0.72rem', flexShrink: 0 }}>
                               {formatTime(nov.timestamp)}
                             </span>
                           </div>
@@ -1000,11 +1000,11 @@ export function NovedadesView({ config }: NovedadesViewProps) {
       {showStartModal && (
         <div
           className="fixed inset-0 flex items-center justify-center z-50"
-          style={{ background: 'rgba(0,0,0,0.88)' }}
+          style={{ background: 'rgba(0,0,0,0.5)' }}
         >
           <div style={{
             width: '100%', maxWidth: '480px',
-            background: 'rgba(15,23,42,0.97)',
+            background: '#ffffff',
             border: `2px solid ${TAB_COLOR[pendingTab]}50`,
             borderRadius: '20px',
             boxShadow: `0 0 60px ${TAB_COLOR[pendingTab]}25`,
@@ -1013,7 +1013,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
             {/* Header del modal */}
             <div style={{
               padding: '1.5rem 1.75rem 1.2rem',
-              borderBottom: '1px solid rgba(255,255,255,0.07)',
+              borderBottom: '1px solid rgba(0,0,0,0.15)',
               background: `linear-gradient(135deg, ${TAB_COLOR[pendingTab]}10 0%, transparent 100%)`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.3rem' }}>
@@ -1023,11 +1023,11 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                   borderRadius: '50%',
                   boxShadow: `0 0 8px ${TAB_COLOR[pendingTab]}`,
                 }} />
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f1f5f9' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-color)' }}>
                   {TAB_LABEL[pendingTab]}
                 </h2>
               </div>
-              <p style={{ color: '#64748b', fontSize: '0.85rem', marginLeft: '1.6rem' }}>
+              <p style={{ color: 'var(--text-color)', fontSize: '0.85rem', marginLeft: '1.6rem' }}>
                 Iniciá una nueva sesión o continuá una anterior
               </p>
             </div>
@@ -1035,19 +1035,19 @@ export function NovedadesView({ config }: NovedadesViewProps) {
             <div style={{ padding: '1.5rem 1.75rem' }}>
               {/* ── Nueva Sesión ──────────────────────────────────── */}
               <div style={{
-                background: 'rgba(0,0,0,0.25)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(0,0,0,0.05)',
+                border: '1px solid rgba(0,0,0,0.15)',
                 borderRadius: '14px',
                 padding: '1.2rem',
                 marginBottom: '1.25rem',
               }}>
-                <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-color)', marginBottom: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Plus size={15} style={{ color: TAB_COLOR[pendingTab] }} /> Nueva sesión
                 </h3>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
                   <div className="form-group">
-                    <label style={{ fontSize: '0.8rem', color: '#64748b' }}>Fecha</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-color)' }}>Fecha</label>
                     <input
                       ref={modalDateRef}
                       type="date"
@@ -1059,7 +1059,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                     />
                   </div>
                   <div className="form-group">
-                    <label style={{ fontSize: '0.8rem', color: '#64748b' }}>Etiqueta (opcional)</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-color)' }}>Etiqueta (opcional)</label>
                     <input
                       type="text"
                       className="input-field"
@@ -1093,16 +1093,16 @@ export function NovedadesView({ config }: NovedadesViewProps) {
 
               {/* ── Sesiones anteriores ───────────────────────────── */}
               <div>
-                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-color)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Clock size={13} /> Sesiones anteriores de {pendingTab === 'IA' ? 'Inseminación (IA)' : pendingTab}
                 </h3>
 
                 {loadingPrev && (
-                  <p style={{ color: '#475569', fontSize: '0.82rem', padding: '0.5rem 0' }}>Cargando...</p>
+                  <p style={{ color: 'var(--text-color)', fontSize: '0.82rem', padding: '0.5rem 0' }}>Cargando...</p>
                 )}
 
                 {!loadingPrev && prevSessions.length === 0 && (
-                  <p style={{ color: '#334155', fontSize: '0.82rem', padding: '0.5rem 0' }}>
+                  <p style={{ color: 'var(--text-color)', fontSize: '0.82rem', padding: '0.5rem 0' }}>
                     No hay sesiones anteriores.
                   </p>
                 )}
@@ -1114,8 +1114,8 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                       onClick={() => continueSession(ses)}
                       style={{
                         width: '100%', textAlign: 'left',
-                        background: 'rgba(0,0,0,0.2)',
-                        border: '1px solid rgba(255,255,255,0.07)',
+                        background: 'rgba(0,0,0,0.05)',
+                        border: '1px solid rgba(0,0,0,0.15)',
                         borderRadius: '10px',
                         padding: '0.7rem 0.9rem',
                         cursor: 'pointer',
@@ -1128,15 +1128,15 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                         e.currentTarget.style.borderColor = `${TAB_COLOR[pendingTab]}40`;
                       }}
                       onMouseLeave={e => {
-                        e.currentTarget.style.background = 'rgba(0,0,0,0.2)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)';
+                        e.currentTarget.style.background = 'rgba(0,0,0,0.05)';
+                        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)';
                       }}
                     >
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#e2e8f0', marginBottom: '0.15rem' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-color)', marginBottom: '0.15rem' }}>
                           {ses.label || `Sesión del ${formatDate(ses.date)}`}
                         </div>
-                        <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: '#64748b' }}>
+                        <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-color)' }}>
                           <span><Calendar size={10} style={{ display: 'inline', marginRight: '0.2rem' }} />{formatDate(ses.date)}</span>
                           <span><Clock size={10} style={{ display: 'inline', marginRight: '0.2rem' }} />{formatTime(ses.startedAt)}</span>
                         </div>
@@ -1154,7 +1154,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                       }}>
                         {ses.count}
                       </div>
-                      <ArrowRight size={14} style={{ color: '#475569', flexShrink: 0 }} />
+                      <ArrowRight size={14} style={{ color: 'var(--text-color)', flexShrink: 0 }} />
                     </button>
                   ))}
                 </div>
@@ -1167,10 +1167,10 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                   marginTop: '1rem',
                   width: '100%',
                   background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(0,0,0,0.15)',
                   borderRadius: '10px',
                   padding: '0.55rem',
-                  color: '#475569',
+                  color: 'var(--text-color)',
                   cursor: 'pointer',
                   fontSize: '0.85rem',
                   transition: 'background 0.2s',
