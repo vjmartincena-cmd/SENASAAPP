@@ -179,14 +179,20 @@ export function SenasaExportView() {
             <div className="grid grid-cols-2 gap-4">
               <div className="form-group">
                 <label>Sexo</label>
-                <select className="input-field" value={currentSex} onChange={(e) => setCurrentSex(e.target.value as Sex)}>
+                <select className="input-field" value={currentSex} onChange={(e) => {
+                  setCurrentSex(e.target.value as Sex);
+                  setTimeout(() => scannerInputRef.current?.focus(), 50);
+                }}>
                   <option value="M">Macho (M)</option>
                   <option value="H">Hembra (H)</option>
                 </select>
               </div>
               <div className="form-group">
                 <label>Raza</label>
-                <select className="input-field" value={currentBreed} onChange={(e) => setCurrentBreed(e.target.value as Breed)}>
+                <select className="input-field" value={currentBreed} onChange={(e) => {
+                  setCurrentBreed(e.target.value as Breed);
+                  setTimeout(() => scannerInputRef.current?.focus(), 50);
+                }}>
                   <option value="GC">Ganado Cruza (GC)</option>
                   <option value="H">Hereford (H)</option>
                   <option value="AA">Aberdeen Angus (AA)</option>
@@ -197,7 +203,9 @@ export function SenasaExportView() {
             </div>
             <div className="form-group mt-4">
               <label>Fecha Nacimiento</label>
-              <input type="text" className="input-field" placeholder="MM/YYYY" value={currentDate} onChange={(e) => setCurrentDate(e.target.value)} />
+              <input type="text" className="input-field" placeholder="MM/YYYY" value={currentDate} onChange={(e) => setCurrentDate(e.target.value)} onKeyDown={(e) => {
+                if (e.key === 'Enter') scannerInputRef.current?.focus();
+              }} />
             </div>
           </section>
 
