@@ -1,18 +1,52 @@
-import { useState } from 'react';
-import { AppConfig, db } from '../db';
-import { Trash2, Plus, Download, Upload, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { AppConfig, db, UserProfile } from '../db';
+import { Trash2, Plus, Download, Upload, AlertTriangle, Users, Check, X } from 'lucide-react';
 
 interface ConfigViewProps {
   config: AppConfig;
   setConfig: (config: AppConfig) => void;
+  userProfile: UserProfile | null;
 }
 
-export function ConfigView({ config, setConfig }: ConfigViewProps) {
+export function ConfigView({ config, setConfig, userProfile }: ConfigViewProps) {
   const [newColor, setNewColor] = useState('');
   const [newBull, setNewBull] = useState('');
   const [newRenspa, setNewRenspa] = useState('');
   const [oldAnimalId, setOldAnimalId] = useState('');
   const [newAnimalId, setNewAnimalId] = useState('');
+  const [users, setUsers] = useState<UserProfile[]>([]);
+
+  useEffect(() => {
+    if (userProfile?.role === 'admin') {
+      loadUsers();
+    }
+  }, [userProfile]);
+
+  const loadUsers = async () => {
+    const list = await db.getAllUserProfiles();
+    setUsers(list);
+  };
+
+  const handleToggleApprove = async (u: UserProfile) => {
+    if (u.uid === userProfile?.uid) {
+      alert("No puedes modificar tu propio estado de aprobación.");
+      return;
+    }
+    const updated = { ...u, approved: !u.approved };
+    await db.saveUserProfile(updated);
+    await loadUsers();
+  };
+
+  const handleDeleteUser = async (u: UserProfile) => {
+    if (u.uid === userProfile?.uid) {
+      alert("No puedes eliminarte a ti mismo.");
+      return;
+    }
+    if (window.confirm(`¿Seguro que deseas eliminar el perfil del usuario ${u.email}?`)) {
+      await db.deleteUserProfile(u.uid);
+      await loadUsers();
+    }
+  };
 
   const addColor = async () => {
     if (!newColor.trim() || config.colors.includes(newColor.trim())) return;
@@ -245,6 +279,76 @@ export function ConfigView({ config, setConfig }: ConfigViewProps) {
             </button>
           </div>
         </div>
+
+        {/* Gestión de Usuarios (Sólo Admin) */}
+        {userProfile?.role === 'admin' && (
+          <div className="glass-panel p-6 grid-span-2">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Users size={20} className="text-accent" /> Gestión de Usuarios
+            </h2>
+            <div className="overflow-x-auto">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>Correo Electrónico</th>
+                    <th style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>Rol</th>
+                    <th style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>Estado</th>
+                    <th style={{ padding: '0.75rem', color: 'var(--text-secondary)', textAlign: 'right' }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.uid} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '0.75rem', fontWeight: 600 }}>{u.email}</td>
+                      <td style={{ padding: '0.75rem' }}>
+                        <span style={{ 
+                          background: u.role === 'admin' ? 'rgba(37,99,235,0.1)' : 'rgba(0,0,0,0.05)', 
+                          color: u.role === 'admin' ? '#2563eb' : 'var(--text-secondary)',
+                          padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 700 
+                        }}>
+                          {u.role.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem' }}>
+                        <span style={{ 
+                          background: u.approved ? 'rgba(21,128,61,0.1)' : 'rgba(239,68,68,0.1)', 
+                          color: u.approved ? '#15803d' : '#dc2626',
+                          padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 700 
+                        }}>
+                          {u.approved ? 'Aprobado' : 'Pendiente'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button 
+                          className={`btn ${u.approved ? 'btn-danger' : 'btn-success'}`}
+                          style={{ padding: '0.4rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}
+                          onClick={() => handleToggleApprove(u)}
+                          disabled={u.uid === userProfile.uid}
+                        >
+                          {u.approved ? <><X size={14} /> Revocar</> : <><Check size={14} /> Aprobar</>}
+                        </button>
+                        <button 
+                          className="btn btn-danger"
+                          style={{ padding: '0.4rem 0.5rem' }}
+                          onClick={() => handleDeleteUser(u)}
+                          disabled={u.uid === userProfile.uid}
+                          title="Eliminar usuario"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {users.length === 0 && (
+                    <tr>
+                      <td colSpan={4} style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No hay usuarios registrados.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Base de Datos */}
         <div className="glass-panel p-6 grid-span-2">

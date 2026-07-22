@@ -72,6 +72,15 @@ export interface AppConfig {
   lastTubeDate: string; // To reset tube number on a new day
 }
 
+// ─── PERFIL DE USUARIO GLOBAL ──────────────────────────────────────────────
+export interface UserProfile {
+  uid: string;
+  email: string;
+  approved: boolean;
+  role: 'admin' | 'user';
+  createdAt: number;
+}
+
 const DB_NAME = 'SenasaCriaDB';
 const DB_VERSION = 2; // bumped to add 'sesiones' store + sessionId index
 
@@ -641,6 +650,35 @@ export class Database {
         req.onerror = () => reject(req.error);
       });
     }
+  }
+
+  // --- USER PROFILES (GLOBAL) ---
+  async getUserProfile(uid: string): Promise<UserProfile | null> {
+    try {
+      const docRef = doc(dbFirestore, 'app_users', uid);
+      const snap = await getDoc(docRef);
+      return snap.exists() ? (snap.data() as UserProfile) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async saveUserProfile(profile: UserProfile): Promise<void> {
+    const docRef = doc(dbFirestore, 'app_users', profile.uid);
+    await setDoc(docRef, profile);
+  }
+
+  async getAllUserProfiles(): Promise<UserProfile[]> {
+    const collRef = collection(dbFirestore, 'app_users');
+    const snap = await getDocs(collRef);
+    const list: UserProfile[] = [];
+    snap.forEach(d => list.push(d.data() as UserProfile));
+    return list;
+  }
+  
+  async deleteUserProfile(uid: string): Promise<void> {
+    const docRef = doc(dbFirestore, 'app_users', uid);
+    await deleteDoc(docRef);
   }
 }
 
