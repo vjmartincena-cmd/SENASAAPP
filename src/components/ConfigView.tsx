@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { AppConfig, db, UserProfile } from '../db';
-import { Trash2, Plus, Download, Upload, AlertTriangle, Users, Check, X } from 'lucide-react';
+import { Trash2, Plus, Download, Upload, AlertTriangle, Users, Check, X, LogOut } from 'lucide-react';
+import { auth } from '../firebaseConfig';
+import { signOut } from 'firebase/auth';
 
 interface ConfigViewProps {
   config: AppConfig;
@@ -384,6 +386,25 @@ export function ConfigView({ config, setConfig, userProfile }: ConfigViewProps) 
               <Trash2 size={18} /> Limpiar Toda la Memoria
             </button>
           </div>
+        </div>
+
+        {/* Cerrar Sesión */}
+        <div className="glass-panel p-6 grid-span-2 flex justify-between items-center bg-gray-50/5">
+          <div>
+            <h2 className="text-lg font-semibold">Sesión Actual</h2>
+            <p className="text-sm text-muted">Estás conectado como: {userProfile?.email}</p>
+          </div>
+          <button 
+            className="btn btn-danger"
+            style={{ padding: '0.75rem 1.5rem', fontWeight: 'bold' }}
+            onClick={async () => {
+              if (confirm('¿Seguro que deseas cerrar la sesión actual?')) {
+                await signOut(auth);
+              }
+            }}
+          >
+            <LogOut size={20} /> Cerrar Sesión
+          </button>
         </div>
       </div>
     </div>
