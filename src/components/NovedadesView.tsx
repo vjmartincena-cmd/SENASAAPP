@@ -65,6 +65,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
   const [iaWarning, setIaWarning] = useState('');
   const [lastIAData, setLastIAData] = useState<{ date: string; bull: string } | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [currentRodeo, setCurrentRodeo] = useState('');
 
   // ── Modal animal no registrado ─────────────────────────────────────────────
   const [showAnimalModal, setShowAnimalModal] = useState(false);
@@ -275,6 +276,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
       date,
       timestamp: Date.now(),
       sessionId: currentSession.id,
+      rodeo: currentRodeo.trim() || undefined,
     };
 
     try {
@@ -484,6 +486,17 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                     className="input-field"
                     value={date}
                     onChange={e => setDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group mb-4">
+                  <label>Rodeo Activo (Opcional)</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Ej. Vaquillonas, General..."
+                    value={currentRodeo}
+                    onChange={e => setCurrentRodeo(e.target.value)}
                   />
                 </div>
 
@@ -896,6 +909,11 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                               {nov.animalId}
                             </span>
                             {/* Detalle específico */}
+                            {nov.rodeo && (
+                              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-color)', background: 'rgba(0,0,0,0.06)', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(0,0,0,0.1)' }}>
+                                {nov.rodeo}
+                              </span>
+                            )}
                             {nov.type === 'Tacto' && (() => {
                               const r = nov.result;
                               const isIA = r === 'Preñada IA';

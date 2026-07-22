@@ -6,7 +6,8 @@ import {
   Settings, 
   Download,
   Skull,
-  LogOut
+  LogOut,
+  Home
 } from 'lucide-react';
 import { auth } from '../firebaseConfig';
 import { signOut } from 'firebase/auth';
@@ -20,12 +21,13 @@ interface SidebarProps {
 
 export function Sidebar({ activeTab, setActiveTab, isOpen, onClose }: SidebarProps) {
   const navItems = [
-    { id: 'senasa', label: 'Venta / SENASA', icon: <Download size={20} /> },
-    { id: 'fichas', label: 'Fichas de Cría', icon: <ClipboardList size={20} /> },
+    { id: 'inicio', label: 'Inicio', icon: <Home size={20} /> },
+    { id: 'fichas', label: 'Fichas de Animales', icon: <ClipboardList size={20} /> },
     { id: 'novedades', label: 'Novedades', icon: <Stethoscope size={20} /> },
     { id: 'buscar', label: 'Buscar Vaca', icon: <Search size={20} /> },
-    { id: 'muerte', label: 'Baja / Muerte', icon: <Skull size={20} /> },
     { id: 'informes', label: 'Informes', icon: <FileSpreadsheet size={20} /> },
+    { id: 'muerte', label: 'Baja', icon: <Skull size={20} /> },
+    { id: 'senasa', label: 'Ventas', icon: <Download size={20} /> },
     { id: 'config', label: 'Configuración', icon: <Settings size={20} /> },
   ];
 

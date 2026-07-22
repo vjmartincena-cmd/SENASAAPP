@@ -32,6 +32,7 @@ export interface NovedadBase {
   type: NovedadType;
   timestamp: number;
   sessionId?: string; // ID de la sesión a la que pertenece
+  rodeo?: string; // Etiqueta opcional del rodeo activo durante el escaneo
 }
 
 export interface NovedadSanidad extends NovedadBase {

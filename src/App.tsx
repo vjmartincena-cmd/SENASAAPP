@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
+import { HomeView } from './components/HomeView';
 import { SenasaExportView } from './components/SenasaExportView';
 import { FichasView } from './components/FichasView';
 import { NovedadesView } from './components/NovedadesView';
@@ -15,7 +16,7 @@ import { Menu } from 'lucide-react';
 import './App.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('senasa');
+  const [activeTab, setActiveTab] = useState('inicio');
   const [isDbReady, setIsDbReady] = useState(false);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -68,6 +69,7 @@ function App() {
 
   const renderView = () => {
     switch (activeTab) {
+      case 'inicio': return <HomeView setActiveTab={setActiveTab} />;
       case 'senasa': return <SenasaExportView />;
       case 'fichas': return <FichasView config={config} />;
       case 'novedades': return <NovedadesView config={config} />;
@@ -75,7 +77,7 @@ function App() {
       case 'muerte': return <MuerteView />;
       case 'informes': return <InformesView />;
       case 'config': return <ConfigView config={config} setConfig={setConfig} />;
-      default: return <SenasaExportView />;
+      default: return <HomeView setActiveTab={setActiveTab} />;
     }
   };
 

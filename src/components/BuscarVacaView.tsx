@@ -97,7 +97,11 @@ export function BuscarVacaView() {
     setTubeInput('');
   };
 
-  const removeTube = (num: number) => setTargetTubes(prev => prev.filter(t => t !== num));
+  const removeTube = (num: number) => {
+    if (window.confirm(`¿Seguro que deseas quitar el tubo #${num} de la lista de positivos?`)) {
+      setTargetTubes(prev => prev.filter(t => t !== num));
+    }
+  };
 
   const clearTubes = () => {
     if (confirm('¿Limpiar la lista de tubos positivos?')) setTargetTubes([]);
@@ -173,6 +177,11 @@ export function BuscarVacaView() {
 
   const selectedSesion = sanidadSesiones.find(s => s.id === selectedSesionId);
   const sesionAnimalCount = Object.keys(sesionMap).length;
+
+  const positiveTubesFound = scannedLog
+    .filter(e => e.status === 'positive')
+    .map(e => sesionMap[e.id])
+    .filter(t => t !== undefined);
 
   return (
     <div className="view-container">
@@ -253,22 +262,30 @@ export function BuscarVacaView() {
                 </button>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {targetTubes.map(t => (
-                <div
-                  key={t}
-                  onClick={() => removeTube(t)}
-                  title="Click para quitar"
-                  style={{
-                    background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)',
-                    borderRadius: '99px', padding: '0.2rem 0.7rem',
-                    color: '#dc2626', fontWeight: 700, fontSize: '0.82rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  #{t} ×
-                </div>
-              ))}
+            <div className="flex flex-wrap gap-2" style={{ maxWidth: '100%' }}>
+              {targetTubes.map(t => {
+                const isFound = positiveTubesFound.includes(t);
+                return (
+                  <div
+                    key={t}
+                    onClick={() => removeTube(t)}
+                    title={isFound ? "¡Encontrado! Click para quitar" : "Click para quitar"}
+                    style={{
+                      background: isFound ? '#dc2626' : 'rgba(0,0,0,0.06)', 
+                      border: isFound ? '1px solid #b91c1c' : '1px solid rgba(0,0,0,0.15)',
+                      borderRadius: '99px', padding: '0.35rem 0.8rem',
+                      color: isFound ? '#ffffff' : 'var(--text-color)', 
+                      fontWeight: 700, fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      boxShadow: isFound ? '0 3px 8px rgba(220,38,38,0.4)' : 'none',
+                      display: 'flex', alignItems: 'center', gap: '0.3rem',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    #{t} {isFound ? '✓' : '×'}
+                  </div>
+                );
+              })}
               {targetTubes.length === 0 && (
                 <span className="text-sm text-muted">Ninguno ingresado aún.</span>
               )}
