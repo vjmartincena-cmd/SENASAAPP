@@ -3,7 +3,7 @@ import { db, AppConfig, Animal, NovedadIA, Sesion, Novedad, NovedadType } from '
 import { soundSystem } from '../sounds';
 import {
   ScanLine, Save, AlertTriangle, Hash, Plus, ChevronDown, ChevronRight,
-  Clock, Calendar, Layers, ArrowRight
+  Clock, Calendar, Layers, ArrowRight, Trash2
 } from 'lucide-react';
 
 interface NovedadesViewProps {
@@ -358,6 +358,21 @@ export function NovedadesView({ config }: NovedadesViewProps) {
       const novs = await db.getNovedadesBySession(sesId);
       novs.sort((a, b) => a.timestamp - b.timestamp);
       setSessionNovedades(prev => ({ ...prev, [sesId]: novs }));
+    }
+  };
+
+  const handleDeleteSession = async (sesId: string) => {
+    if (window.confirm("¿Seguro que deseas eliminar esta sesión y todos sus registros asociados? Esta acción no se puede deshacer.")) {
+      await db.deleteSesion(sesId);
+      if (currentSession?.id === sesId) {
+        setCurrentSession(null);
+        setSessionCount(0);
+      }
+      if (expandedSession === sesId) {
+        setExpandedSession(null);
+      }
+      await loadAllSessions();
+      soundSystem.playSuccess();
     }
   };
 
@@ -851,29 +866,52 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                 {/* Detalle expandido */}
                 {isExpanded && (
                   <div style={{ borderTop: '1px solid rgba(0,0,0,0.15)', padding: '0.75rem 1.1rem' }}>
-                    {/* Botón continuar si no es la activa */}
-                    {!isActive && (
+                    
+                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                      {/* Botón continuar si no es la activa */}
+                      {!isActive && (
+                        <button
+                          onClick={() => continueSession(ses)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            background: `${color}15`,
+                            border: `1px solid ${color}40`,
+                            borderRadius: '8px',
+                            padding: '0.45rem 1rem',
+                            color: color,
+                            cursor: 'pointer',
+                            fontSize: '0.82rem',
+                            fontWeight: 600,
+                            transition: 'background 0.2s',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = `${color}25`)}
+                          onMouseLeave={e => (e.currentTarget.style.background = `${color}15`)}
+                        >
+                          <ArrowRight size={14} /> Continuar esta sesión
+                        </button>
+                      )}
+                      
+                      {/* Botón eliminar sesión */}
                       <button
-                        onClick={() => continueSession(ses)}
+                        onClick={() => handleDeleteSession(ses.id)}
                         style={{
                           display: 'flex', alignItems: 'center', gap: '0.5rem',
-                          background: `${color}15`,
-                          border: `1px solid ${color}40`,
+                          background: 'rgba(239,68,68,0.1)',
+                          border: '1px solid rgba(239,68,68,0.4)',
                           borderRadius: '8px',
                           padding: '0.45rem 1rem',
-                          color: color,
+                          color: '#dc2626',
                           cursor: 'pointer',
                           fontSize: '0.82rem',
                           fontWeight: 600,
-                          marginBottom: '0.75rem',
                           transition: 'background 0.2s',
                         }}
-                        onMouseEnter={e => (e.currentTarget.style.background = `${color}25`)}
-                        onMouseLeave={e => (e.currentTarget.style.background = `${color}15`)}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.15)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
                       >
-                        <ArrowRight size={14} /> Continuar esta sesión
+                        <Trash2 size={14} /> Eliminar Sesión
                       </button>
-                    )}
+                    </div>
 
                     {/* Lista de novedades */}
                     {novs.length === 0 ? (

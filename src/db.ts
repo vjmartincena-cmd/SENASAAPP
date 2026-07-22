@@ -466,6 +466,36 @@ export class Database {
   }
 
   // --- EXPORT / IMPORT (Backup) ---
+  async deleteSesion(id: string): Promise<void> {
+    const novedades = await this.getNovedadesBySession(id);
+    
+    if (this.currentUser) {
+      const batch = writeBatch(dbFirestore);
+      batch.delete(this.getSesionDoc(this.currentUser.uid, id));
+      for (const nov of novedades) {
+        batch.delete(this.getNovedadDoc(this.currentUser.uid, nov.id));
+      }
+      await batch.commit();
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      if (!this.db) return reject(new Error('DB not initialized'));
+      const tx = this.db.transaction(['sesiones', 'novedades'], 'readwrite');
+      
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      
+      const sesStore = tx.objectStore('sesiones');
+      const novStore = tx.objectStore('novedades');
+
+      sesStore.delete(id);
+      for (const nov of novedades) {
+        novStore.delete(nov.id);
+      }
+    });
+  }
+
   async exportData(): Promise<string> {
     const animals = await this.getAllAnimals();
     const novedades = await this.getAllNovedades();
