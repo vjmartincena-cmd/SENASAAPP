@@ -414,8 +414,8 @@
 
 @media (max-width: 1024px) and (min-width: 769px) {
   .grid-layout {
-    grid-template-columns: 1fr;
-    height: auto;
+    grid-template-columns: 1fr !important;
+    height: auto !important;
   }
   
   .right-panel {
