@@ -13,6 +13,7 @@ import { db, AppConfig, UserProfile } from './db';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { Menu } from 'lucide-react';
+import { InstallPrompt } from './components/InstallPrompt';
 import './App.css';
 
 function App() {
@@ -129,10 +130,13 @@ function App() {
     <div className={`app-layout ${isMobileMenuOpen ? 'menu-open' : ''}`}>
       {/* Cabecera Móvil */}
       <header className="mobile-header">
-        <button className="menu-toggle-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label="Abrir menú">
-          <Menu size={24} />
-        </button>
-        <h1>Gestión Ganadera</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button className="menu-toggle-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label="Abrir menú">
+            <Menu size={24} />
+          </button>
+          <h1>Gestión Ganadera</h1>
+        </div>
+        <InstallPrompt />
       </header>
 
       {/* Overlay de menú móvil */}

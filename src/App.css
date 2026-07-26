@@ -313,7 +313,7 @@
   .mobile-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    justify-content: space-between;
     padding: 0.85rem 1.25rem;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(8px);
