@@ -3,7 +3,7 @@ import { db, AppConfig, Animal, NovedadIA, Sesion, Novedad, NovedadType } from '
 import { soundSystem } from '../sounds';
 import {
   ScanLine, Save, AlertTriangle, Hash, Plus, ChevronDown, ChevronRight,
-  Clock, Calendar, Layers, ArrowRight, Trash2
+  Clock, Calendar, Layers, ArrowRight, Trash2, Check, X
 } from 'lucide-react';
 
 interface NovedadesViewProps {
@@ -48,15 +48,33 @@ export function NovedadesView({ config }: NovedadesViewProps) {
   const [pendingTab, setPendingTab] = useState<TabType>('Sanidad');
   const [modalDate, setModalDate] = useState('');
   const [modalLabel, setModalLabel] = useState('');
+  const [modalTargetRodeo, setModalTargetRodeo] = useState('');
   const [prevSessions, setPrevSessions] = useState<Sesion[]>([]);
   const [loadingPrev, setLoadingPrev] = useState(false);
 
-  // ── Escaneo ────────────────────────────────────────────────────────────────
+  // ── Escaneo y Modo de Confirmación ─────────────────────────────────────────
   const [rfid, setRfid] = useState('');
   const [currentAnimal, setCurrentAnimal] = useState<Animal | null>(null);
+  const [pendingManualAnimal, setPendingManualAnimal] = useState<Animal | null>(null);
+  const [animalPrevRodeo, setAnimalPrevRodeo] = useState<string | null>(null);
+  const [lastScanFeedback, setLastScanFeedback] = useState<{ id: string; prevRodeo: string; targetRodeo?: string } | null>(null);
+  const [autoSaveScan, setAutoSaveScan] = useState<boolean>(() =>
+    localStorage.getItem('senasa_autosave_scan') !== 'false'
+  );
+  const [filterRodeo, setFilterRodeo] = useState<string>(() =>
+    localStorage.getItem('senasa_filter_rodeo') || ''
+  );
   const [date, setDate] = useState(() =>
     localStorage.getItem('senasa_novedades_date') || new Date().toISOString().split('T')[0]
   );
+
+  useEffect(() => {
+    localStorage.setItem('senasa_autosave_scan', String(autoSaveScan));
+  }, [autoSaveScan]);
+
+  useEffect(() => {
+    localStorage.setItem('senasa_filter_rodeo', filterRodeo);
+  }, [filterRodeo]);
 
   // ── Campos específicos ─────────────────────────────────────────────────────
   const [bull, setBull] = useState(config.bulls[0] || '');
@@ -120,6 +138,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
     setPendingTab(tab);
     setModalDate(new Date().toISOString().split('T')[0]);
     setModalLabel('');
+    setModalTargetRodeo('');
     setLoadingPrev(true);
     setShowStartModal(true);
 
@@ -147,15 +166,20 @@ export function NovedadesView({ config }: NovedadesViewProps) {
       startedAt: Date.now(),
       count: 0,
       label: modalLabel.trim() || undefined,
+      targetRodeo: modalTargetRodeo.trim() || undefined,
     };
     await db.saveSesion(sesion);
 
     setDate(modalDate);
     setActiveTab(pendingTab);
     setCurrentSession(sesion);
+    setCurrentRodeo(modalTargetRodeo.trim());
     setSessionCount(0);
     setRfid('');
     setCurrentAnimal(null);
+    setPendingManualAnimal(null);
+    setAnimalPrevRodeo(null);
+    setLastScanFeedback(null);
     setIaWarning('');
     setTactoObs('');
     setShowStartModal(false);
@@ -168,9 +192,13 @@ export function NovedadesView({ config }: NovedadesViewProps) {
     setDate(ses.date);
     setActiveTab(ses.type);
     setCurrentSession(ses);
+    setCurrentRodeo(ses.targetRodeo || '');
     setSessionCount(ses.count);
     setRfid('');
     setCurrentAnimal(null);
+    setPendingManualAnimal(null);
+    setAnimalPrevRodeo(null);
+    setLastScanFeedback(null);
     setIaWarning('');
     setTactoObs('');
     setShowStartModal(false);
@@ -180,12 +208,27 @@ export function NovedadesView({ config }: NovedadesViewProps) {
 
   // ── Escaneo ────────────────────────────────────────────────────────────────
   const handleScan = async (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      if (pendingManualAnimal) {
+        handleCancelManualScan();
+        return;
+      }
+    }
+
     if (e.key !== 'Enter') return;
+
+    // Si ya hay un animal en espera de confirmación y presionan Enter con el input vacío, confirmar
+    if (pendingManualAnimal && rfid.trim() === '') {
+      await handleConfirmManualSave();
+      return;
+    }
+
     if (!currentSession) {
       // No hay sesión activa, abrir modal
       openStartModal(activeTab);
       return;
     }
+
     const code = rfid.trim();
     setRfid('');
     if (code.length !== 15 || !/^\d+$/.test(code)) {
@@ -200,7 +243,6 @@ export function NovedadesView({ config }: NovedadesViewProps) {
       setShowAnimalModal(true);
       return;
     } else {
-      soundSystem.playSuccess();
       await continueWithAnimal(animal);
     }
   };
@@ -212,6 +254,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
       breed: newBreed,
       color: newColor,
       renspa: newRenspa,
+      rodeo: currentRodeo.trim() || undefined,
       birthDate: newBirthDate,
       createdAt: Date.now(),
       reportedToSenasa: false,
@@ -235,8 +278,10 @@ export function NovedadesView({ config }: NovedadesViewProps) {
     }
     setDuplicateWarning(null);
     setCurrentAnimal(animal);
+    setAnimalPrevRodeo(animal.rodeo || 'Sin Asignar');
 
-    if (activeTab === 'Tacto') {
+    // Cargar antecedentes de IA para mostrar info en Tacto o IA
+    if (activeTab === 'Tacto' || activeTab === 'IA') {
       const novedades = await db.getNovedadesByAnimal(animal.id);
       const ias = novedades.filter(n => n.type === 'IA') as NovedadIA[];
       if (ias.length > 0) {
@@ -260,9 +305,48 @@ export function NovedadesView({ config }: NovedadesViewProps) {
         setLastIAData(null);
         setIaWarning('');
       }
-    } else {
-      await executeSaveNovedad(animal);
     }
+
+    if (activeTab === 'Tacto') {
+      soundSystem.playSuccess();
+      return;
+    }
+
+    // Para IA y Sanidad: verificar si corresponde guardado automático o confirmación manual
+    const matchesFilter = !filterRodeo || (animal.rodeo || '') === filterRodeo;
+    const shouldAutoSave = autoSaveScan && matchesFilter;
+
+    if (shouldAutoSave) {
+      soundSystem.playSuccess();
+      setPendingManualAnimal(null);
+      await executeSaveNovedad(animal);
+    } else {
+      // Modo confirmación manual o advertencia de rodeo no coincidente
+      if (!matchesFilter) {
+        soundSystem.playAlarm();
+      } else {
+        soundSystem.playSuccess();
+      }
+      setPendingManualAnimal(animal);
+    }
+  };
+
+  const handleConfirmManualSave = async () => {
+    if (!pendingManualAnimal) return;
+    const animal = pendingManualAnimal;
+    setPendingManualAnimal(null);
+    await executeSaveNovedad(animal);
+    setTimeout(() => scannerRef.current?.focus(), 80);
+  };
+
+  const handleCancelManualScan = () => {
+    setPendingManualAnimal(null);
+    setCurrentAnimal(null);
+    setAnimalPrevRodeo(null);
+    setIaWarning('');
+    setDuplicateWarning(null);
+    setRfid('');
+    setTimeout(() => scannerRef.current?.focus(), 80);
   };
 
   // executeSaveNovedad acepta result explícito para el caso Tacto (IA/Repaso)
@@ -270,13 +354,23 @@ export function NovedadesView({ config }: NovedadesViewProps) {
     if (!currentSession) return;
 
     const newCount = sessionCount + 1;
+    const targetRodeoVal = currentRodeo.trim();
+    const prevRodeoVal = animal.rodeo || 'Sin Asignar';
+
+    // Si hay un rodeo destino asignado en la sesión, transferir el animal si es distinto
+    if (targetRodeoVal && animal.rodeo !== targetRodeoVal) {
+      animal.rodeo = targetRodeoVal;
+      await db.saveAnimal(animal);
+    }
+
     const baseNovedad = {
       id: crypto.randomUUID(),
       animalId: animal.id,
       date,
       timestamp: Date.now(),
       sessionId: currentSession.id,
-      rodeo: currentRodeo.trim() || undefined,
+      rodeo: targetRodeoVal || animal.rodeo || undefined,
+      prevRodeo: prevRodeoVal !== 'Sin Asignar' ? prevRodeoVal : undefined,
     };
 
     try {
@@ -302,11 +396,16 @@ export function NovedadesView({ config }: NovedadesViewProps) {
         });
       }
 
-      // Actualizar contador en la sesión
-      const updatedSession: Sesion = { ...currentSession, count: newCount };
+      // Actualizar contador y targetRodeo en la sesión
+      const updatedSession: Sesion = { ...currentSession, count: newCount, targetRodeo: targetRodeoVal || undefined };
       await db.saveSesion(updatedSession);
       setCurrentSession(updatedSession);
       setSessionCount(newCount);
+      setLastScanFeedback({
+        id: animal.id,
+        prevRodeo: prevRodeoVal,
+        targetRodeo: targetRodeoVal || undefined
+      });
 
       // Actualizar caché de novedades del panel si está expandido
       if (expandedSession === currentSession.id) {
@@ -320,6 +419,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
 
       soundSystem.playSuccess();
       setCurrentAnimal(null);
+      setAnimalPrevRodeo(null);
       setTactoObs('');
       setTactoResult('Vacía');
       setIaWarning('');
@@ -505,14 +605,27 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                 </div>
 
                 <div className="form-group mb-4">
-                  <label>Rodeo Activo (Opcional)</label>
+                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Rodeo de Destino (Opcional)</span>
+                    {currentRodeo.trim() && (
+                      <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600 }}>
+                        Asignación automática activa
+                      </span>
+                    )}
+                  </label>
                   <input
                     type="text"
+                    list="active-rodeos-list"
                     className="input-field"
-                    placeholder="Ej. Vaquillonas, General..."
+                    placeholder="Ej. 1° IA de 2026, Rodeo 1, Vaquillonas..."
                     value={currentRodeo}
                     onChange={e => setCurrentRodeo(e.target.value)}
                   />
+                  <datalist id="active-rodeos-list">
+                    {(config.rodeos || []).map(r => (
+                      <option key={r} value={r} />
+                    ))}
+                  </datalist>
                 </div>
 
                 {/* Selector de toro: siempre visible en IA, antes de escanear */}
@@ -553,7 +666,61 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                   </div>
                 )}
 
-                <div className="form-group relative mb-6">
+                {/* Selector de Modo de Escaneo y Filtro de Rodeo */}
+                <div style={{
+                  background: 'rgba(0,0,0,0.03)',
+                  border: '1px solid rgba(0,0,0,0.1)',
+                  borderRadius: '12px',
+                  padding: '0.8rem',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <label htmlFor="toggle-autosave" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, margin: 0 }}>
+                      <input
+                        type="checkbox"
+                        id="toggle-autosave"
+                        checked={autoSaveScan}
+                        onChange={e => {
+                          setAutoSaveScan(e.target.checked);
+                          if (e.target.checked && pendingManualAnimal) {
+                            handleCancelManualScan();
+                          }
+                        }}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <span>Guardado Automático al Escanear</span>
+                    </label>
+                    <span style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '99px',
+                      background: autoSaveScan ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
+                      color: autoSaveScan ? '#10b981' : '#f59e0b'
+                    }}>
+                      {autoSaveScan ? '⚡ Modo Rápido' : '👁️ Modo Confirmación'}
+                    </span>
+                  </div>
+
+                  <div style={{ marginTop: '0.4rem' }}>
+                    <label style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>
+                      Rodeo Esperado en Manga (Opcional - Alerta si es de otro rodeo)
+                    </label>
+                    <select
+                      className="input-field"
+                      value={filterRodeo}
+                      onChange={e => setFilterRodeo(e.target.value)}
+                      style={{ fontSize: '0.82rem', padding: '0.35rem 0.6rem' }}
+                    >
+                      <option value="">— Procesar cualquier rodeo —</option>
+                      {(config.rodeos || []).map(r => (
+                        <option key={r} value={r}>Solo rodeo: {r}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group relative mb-4">
                   <label>Caravana (RFID)</label>
                   <div className="flex items-center gap-2">
                     <ScanLine size={20} className="text-accent" />
@@ -568,6 +735,29 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                     />
                   </div>
                 </div>
+
+                {/* Feedback del último animal escaneado */}
+                {lastScanFeedback && (
+                  <div style={{
+                    background: 'rgba(37,99,235,0.08)',
+                    border: '1px solid rgba(37,99,235,0.3)',
+                    borderRadius: '10px',
+                    padding: '0.65rem 0.9rem',
+                    marginBottom: '1rem',
+                    fontSize: '0.84rem',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    color: 'var(--text-primary)'
+                  }}>
+                    <span>✅ Registrado: <strong style={{ fontFamily: 'monospace' }}>{lastScanFeedback.id}</strong></span>
+                    <span style={{ color: 'var(--text-secondary)' }}>• Rodeo anterior: <strong style={{ color: '#f59e0b' }}>{lastScanFeedback.prevRodeo}</strong></span>
+                    {lastScanFeedback.targetRodeo && lastScanFeedback.targetRodeo !== lastScanFeedback.prevRodeo && (
+                      <span style={{ color: '#10b981', fontWeight: 600 }}>→ Pasó a: <strong>{lastScanFeedback.targetRodeo}</strong></span>
+                    )}
+                  </div>
+                )}
 
                 {/* Banner de duplicado en sesión */}
                 {duplicateWarning && (
@@ -591,10 +781,24 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                 )}
 
                 {currentAnimal && (
-
                   <div className="animal-info p-4 bg-white rounded-lg border border-accent/20 mb-6">
-                    <p className="text-sm text-muted mb-1">Animal Seleccionado:</p>
-                    <p className="font-mono text-lg font-bold text-accent">{currentAnimal.id}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div>
+                        <p className="text-sm text-muted mb-1">Animal Seleccionado:</p>
+                        <p className="font-mono text-lg font-bold text-accent">{currentAnimal.id}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Rodeo Anterior:</span>
+                        <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.9rem' }}>
+                          {animalPrevRodeo || 'Sin Asignar'}
+                        </div>
+                        {currentRodeo.trim() && currentRodeo.trim() !== animalPrevRodeo && (
+                          <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600 }}>
+                            Pasará a: {currentRodeo.trim()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <div className="flex gap-4 mt-2 text-sm text-muted">
                       <span>Sexo: {currentAnimal.sex}</span>
                       <span>Raza: {currentAnimal.breed}</span>
@@ -738,8 +942,100 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                 )}
 
 
-                {activeTab !== 'Tacto' && (
-                  <p className="text-sm text-center text-muted mt-4">Guardado automático al escanear.</p>
+                {/* ── Confirmación Manual para IA y Sanidad ── */}
+                {activeTab !== 'Tacto' && pendingManualAnimal && (
+                  <div style={{
+                    background: 'rgba(37,99,235,0.06)',
+                    border: '2px solid rgba(37,99,235,0.35)',
+                    borderRadius: '14px',
+                    padding: '1.1rem',
+                    marginTop: '0.5rem',
+                    boxShadow: '0 4px 20px rgba(37,99,235,0.12)',
+                  }}>
+                    {/* Alerta si no coincide con el rodeo esperado */}
+                    {filterRodeo && (pendingManualAnimal.rodeo || '') !== filterRodeo && (
+                      <div style={{
+                        background: 'rgba(239,68,68,0.15)',
+                        border: '1.5px solid #ef4444',
+                        borderRadius: '8px',
+                        padding: '0.65rem 0.8rem',
+                        marginBottom: '0.9rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        color: '#dc2626',
+                        fontWeight: 700,
+                        fontSize: '0.84rem'
+                      }}>
+                        <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+                        <span>⚠️ ¡Atención! Esta vaca pertenece a &quot;{pendingManualAnimal.rodeo || 'Sin Rodeo'}&quot; (Esperado: &quot;{filterRodeo}&quot;)</span>
+                      </div>
+                    )}
+
+                    {/* Info específica de IA */}
+                    {activeTab === 'IA' && (
+                      <>
+                        {iaWarning && (
+                          <div style={{
+                            background: 'rgba(251,191,36,0.15)',
+                            border: '1px solid #f59e0b',
+                            borderRadius: '8px',
+                            padding: '0.55rem 0.75rem',
+                            marginBottom: '0.8rem',
+                            color: '#92400e',
+                            fontSize: '0.82rem',
+                            fontWeight: 600
+                          }}>
+                            ℹ️ {iaWarning}
+                          </div>
+                        )}
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-color)', marginBottom: '0.8rem' }}>
+                          <span>Toro a utilizar: <strong style={{ color: 'var(--accent)' }}>{bull}</strong></span>
+                          {currentRodeo.trim() && (
+                            <span style={{ display: 'block', marginTop: '0.2rem', color: '#10b981', fontWeight: 600 }}>
+                              Pasará al rodeo: &quot;{currentRodeo.trim()}&quot;
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Info específica de Sanidad */}
+                    {activeTab === 'Sanidad' && (
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-color)', marginBottom: '0.8rem' }}>
+                        <span>Se asignará: <strong style={{ color: '#34d399', fontSize: '1rem' }}>Tubo #{sessionCount + 1}</strong></span>
+                      </div>
+                    )}
+
+                    {/* Botones de acción */}
+                    <div style={{ display: 'flex', gap: '0.6rem' }}>
+                      <button
+                        onClick={handleConfirmManualSave}
+                        className="btn btn-primary"
+                        style={{ flex: 2, padding: '0.75rem', fontSize: '0.92rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                      >
+                        <Check size={18} /> Confirmar {activeTab === 'IA' ? 'Inseminación' : 'Sanidad'}
+                      </button>
+                      <button
+                        onClick={handleCancelManualScan}
+                        className="btn btn-danger"
+                        style={{ flex: 1, padding: '0.75rem', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                      >
+                        <X size={16} /> Saltear Vaca
+                      </button>
+                    </div>
+                    <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                      [Enter] Confirmar · [Esc] Saltear y limpiar
+                    </p>
+                  </div>
+                )}
+
+                {activeTab !== 'Tacto' && !pendingManualAnimal && (
+                  <p className="text-sm text-center text-muted mt-4">
+                    {autoSaveScan
+                      ? '⚡ Guardado automático al escanear activo.'
+                      : '👁️ Escaneá una caravana para inspeccionar su rodeo antes de confirmar.'}
+                  </p>
                 )}
               </>
             )}
@@ -948,8 +1244,13 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                             </span>
                             {/* Detalle específico */}
                             {nov.rodeo && (
-                              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-color)', background: 'rgba(0,0,0,0.06)', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(0,0,0,0.1)' }}>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--accent)', background: 'rgba(37,99,235,0.08)', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(37,99,235,0.2)' }}>
                                 {nov.rodeo}
+                                {nov.prevRodeo && nov.prevRodeo !== nov.rodeo && (
+                                  <span style={{ color: '#f59e0b', marginLeft: '0.35rem', fontSize: '0.68rem', fontWeight: 500 }}>
+                                    (ant: {nov.prevRodeo})
+                                  </span>
+                                )}
                               </span>
                             )}
                             {nov.type === 'Tacto' && (() => {
@@ -1126,6 +1427,28 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                       style={{ fontSize: '0.9rem' }}
                     />
                   </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '1rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-color)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Rodeo de Destino (Opcional)</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--accent)' }}>Asigna automáticamente al escanear</span>
+                  </label>
+                  <input
+                    type="text"
+                    list="modal-rodeos-list"
+                    className="input-field"
+                    placeholder="ej: 1° IA de 2026, Rodeo 1, Vaquillonas..."
+                    value={modalTargetRodeo}
+                    onChange={e => setModalTargetRodeo(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') startNewSession(); }}
+                    style={{ fontSize: '0.9rem' }}
+                  />
+                  <datalist id="modal-rodeos-list">
+                    {(config.rodeos || []).map(r => (
+                      <option key={r} value={r} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <button

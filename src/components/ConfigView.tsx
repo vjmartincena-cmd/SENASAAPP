@@ -14,6 +14,7 @@ export function ConfigView({ config, setConfig, userProfile }: ConfigViewProps) 
   const [newColor, setNewColor] = useState('');
   const [newBull, setNewBull] = useState('');
   const [newRenspa, setNewRenspa] = useState('');
+  const [newRodeo, setNewRodeo] = useState('');
   const [oldAnimalId, setOldAnimalId] = useState('');
   const [newAnimalId, setNewAnimalId] = useState('');
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -88,6 +89,20 @@ export function ConfigView({ config, setConfig, userProfile }: ConfigViewProps) 
 
   const removeRenspa = async (r: string) => {
     const updated = { ...config, renspas: config.renspas.filter(x => x !== r) };
+    await db.saveConfig(updated);
+    setConfig(updated);
+  };
+
+  const addRodeo = async () => {
+    if (!newRodeo.trim() || (config.rodeos && config.rodeos.includes(newRodeo.trim()))) return;
+    const updated = { ...config, rodeos: [...(config.rodeos || []), newRodeo.trim()] };
+    await db.saveConfig(updated);
+    setConfig(updated);
+    setNewRodeo('');
+  };
+
+  const removeRodeo = async (r: string) => {
+    const updated = { ...config, rodeos: (config.rodeos || []).filter(x => x !== r) };
     await db.saveConfig(updated);
     setConfig(updated);
   };
@@ -246,6 +261,30 @@ export function ConfigView({ config, setConfig, userProfile }: ConfigViewProps) 
               <div key={r} className="badge bg-darker text-white px-3 py-2 rounded-lg flex items-center gap-2 border border-accent/20">
                 {r}
                 <button className="btn-icon text-danger p-0 h-auto" onClick={() => removeRenspa(r)} title="Eliminar"><Trash2 size={16}/></button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Rodeos Predefinidos */}
+        <div className="glass-panel p-6 grid-span-2">
+          <h2 className="text-lg font-semibold mb-4">Rodeos Predefinidos</h2>
+          <div className="flex gap-2 mb-4">
+            <input 
+              type="text" 
+              className="input-field flex-1" 
+              placeholder="Ej: Rodeo 1, Vaquillonas, 1° IA 2026..."
+              value={newRodeo}
+              onChange={(e) => setNewRodeo(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addRodeo()}
+            />
+            <button className="btn btn-primary" onClick={addRodeo}><Plus size={18}/></button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(config.rodeos || []).map(r => (
+              <div key={r} className="badge bg-darker text-white px-3 py-2 rounded-lg flex items-center gap-2 border border-accent/20">
+                <span>{r}</span>
+                <button className="btn-icon text-danger p-0 h-auto" onClick={() => removeRodeo(r)} title="Eliminar"><Trash2 size={16}/></button>
               </div>
             ))}
           </div>

@@ -11,6 +11,7 @@ interface ScannedEntry {
   id: string;
   time: string;
   status: 'positive' | 'negative' | 'duplicate' | 'not_in_session';
+  rodeo?: string;
 }
 
 function loadFromLS<T>(key: string, fallback: T): T {
@@ -129,10 +130,13 @@ export function BuscarVacaView() {
       hour: '2-digit', minute: '2-digit', second: '2-digit',
     });
 
+    const animal = await db.getAnimal(code);
+    const animalRodeo = animal?.rodeo || undefined;
+
     // 1. Duplicado en esta sesión de búsqueda
     if (scannedLog.some(e => e.id === code)) {
       soundSystem.playError();
-      const entry: ScannedEntry = { id: code, time, status: 'duplicate' };
+      const entry: ScannedEntry = { id: code, time, status: 'duplicate', rodeo: animalRodeo };
       setLastEntry(entry);
       setScannedLog(prev => [entry, ...prev]);
       return;
@@ -150,7 +154,7 @@ export function BuscarVacaView() {
     if (tubeNumber === undefined) {
       // Animal NO está en la sesión seleccionada
       soundSystem.playError();
-      const entry: ScannedEntry = { id: code, time, status: 'not_in_session' };
+      const entry: ScannedEntry = { id: code, time, status: 'not_in_session', rodeo: animalRodeo };
       setLastEntry(entry);
       setScannedLog(prev => [entry, ...prev]);
       return;
@@ -159,12 +163,12 @@ export function BuscarVacaView() {
     // 4. Está en la sesión → verificar si su tubo es positivo
     if (targetTubes.includes(tubeNumber)) {
       soundSystem.playAlarm();
-      const entry: ScannedEntry = { id: code, time, status: 'positive' };
+      const entry: ScannedEntry = { id: code, time, status: 'positive', rodeo: animalRodeo };
       setLastEntry(entry);
       setScannedLog(prev => [entry, ...prev]);
     } else {
       soundSystem.playNegativeMatch();
-      const entry: ScannedEntry = { id: code, time, status: 'negative' };
+      const entry: ScannedEntry = { id: code, time, status: 'negative', rodeo: animalRodeo };
       setLastEntry(entry);
       setScannedLog(prev => [entry, ...prev]);
     }
@@ -371,15 +375,15 @@ export function BuscarVacaView() {
 
             {/* Resultado del último escaneo */}
             {lastEntry && (() => {
-              const { id, status } = lastEntry;
+              const { id, status, rodeo } = lastEntry;
               if (status === 'positive') return (
                 <div style={{ width: '100%', maxWidth: '24rem', padding: '1rem', borderRadius: '10px', background: 'rgba(239,68,68,0.25)', border: '2px solid #ef4444' }}>
                   <p className="font-mono text-lg font-bold mb-1">{id}</p>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#dc2626', fontWeight: 700, fontSize: '1.1rem' }}>
                     <AlertCircle size={22} /> ¡POSITIVA! SEPARAR
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: '#fca5a5', marginTop: '0.4rem' }}>
-                    Tubo #{sesionMap[id]} — en lista de positivos
+                  <p style={{ fontSize: '0.78rem', color: '#fca5a5', marginTop: '0.4rem' }}>
+                    Tubo #{sesionMap[id]} — en lista de positivos · Rodeo: <strong>{rodeo || 'Sin Asignar'}</strong>
                   </p>
                 </div>
               );
@@ -389,8 +393,8 @@ export function BuscarVacaView() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#15803d', fontWeight: 700, fontSize: '1.1rem' }}>
                     <CheckCircle2 size={22} /> NEGATIVA — Pasa
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: '#6ee7b7', marginTop: '0.4rem' }}>
-                    Tubo #{sesionMap[id]}
+                  <p style={{ fontSize: '0.78rem', color: '#6ee7b7', marginTop: '0.4rem' }}>
+                    Tubo #{sesionMap[id]} · Rodeo: <strong>{rodeo || 'Sin Asignar'}</strong>
                   </p>
                 </div>
               );
@@ -400,8 +404,8 @@ export function BuscarVacaView() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#92400e', fontWeight: 700, fontSize: '1rem' }}>
                     <AlertTriangle size={22} /> NO ESTÁ EN ESTA SESIÓN
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: '#fde68a', marginTop: '0.4rem' }}>
-                    Este animal no fue sanidado en la sesión seleccionada.
+                  <p style={{ fontSize: '0.78rem', color: '#fde68a', marginTop: '0.4rem' }}>
+                    Este animal no fue sanidado en la sesión seleccionada. · Rodeo: <strong>{rodeo || 'Sin Asignar'}</strong>
                   </p>
                 </div>
               );
@@ -434,6 +438,11 @@ export function BuscarVacaView() {
                   return (
                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0.75rem', background: cfg.bg, borderRadius: '7px', fontSize: '0.8rem', border: `1px solid ${cfg.clr}20` }}>
                       <span style={{ fontFamily: 'monospace', color: 'var(--text-color)', flex: 1, fontWeight: 600 }}>{entry.id}</span>
+                      {entry.rodeo && (
+                        <span style={{ fontSize: '0.7rem', color: 'var(--accent)', background: 'rgba(37,99,235,0.08)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                          {entry.rodeo}
+                        </span>
+                      )}
                       <span style={{ color: cfg.clr, fontWeight: 700, fontSize: '0.72rem', flexShrink: 0 }}>{cfg.label}</span>
                       <span style={{ color: 'var(--text-color)', fontSize: '0.7rem', flexShrink: 0 }}>{entry.time}</span>
                     </div>

@@ -21,6 +21,7 @@ export interface Animal {
   birthDate: string; // MM/YYYY
   createdAt: number;
   reportedToSenasa: boolean;
+  rodeo?: string; // Rodeo actual asignado
 }
 
 export type NovedadType = 'Sanidad' | 'IA' | 'Tacto';
@@ -32,7 +33,8 @@ export interface NovedadBase {
   type: NovedadType;
   timestamp: number;
   sessionId?: string; // ID de la sesión a la que pertenece
-  rodeo?: string; // Etiqueta opcional del rodeo activo durante el escaneo
+  rodeo?: string; // Rodeo de destino o activo durante el escaneo
+  prevRodeo?: string; // Rodeo en el que estaba antes del evento
 }
 
 export interface NovedadSanidad extends NovedadBase {
@@ -61,6 +63,7 @@ export interface Sesion {
   startedAt: number;   // timestamp
   count: number;       // cantidad de registros en esta sesión
   label?: string;      // etiqueta opcional (ej. "Mañana", "Tarde")
+  targetRodeo?: string;// Rodeo destino automático para los animales escaneados en esta sesión
 }
 
 export interface AppConfig {
@@ -68,6 +71,7 @@ export interface AppConfig {
   colors: string[];
   bulls: string[];
   renspas: string[];
+  rodeos: string[]; // Lista de rodeos predefinidos
   lastTubeNumber: number; // To keep track of the sequence for the current day
   lastTubeDate: string; // To reset tube number on a new day
 }
@@ -175,6 +179,7 @@ export class Database {
 
   // --- CONFIG ---
   async getConfig(): Promise<AppConfig> {
+    const defaultRodeos = ['General', 'Rodeo 1', 'Rodeo 2', '1° IA 2026'];
     if (this.currentUser) {
       const docRef = this.getConfigDoc(this.currentUser.uid);
       const docSnap = await getDoc(docRef);
@@ -185,9 +190,20 @@ export class Database {
         } else if (!conf.renspas.includes('032010037431649')) {
           conf.renspas = ['032010037431649', ...conf.renspas];
         }
+        if (!conf.rodeos || conf.rodeos.length === 0) {
+          conf.rodeos = defaultRodeos;
+        }
         return conf;
       } else {
-        const defaultConf = { id: 'main', colors: ['Negro', 'Colorado', 'Pampa'], bulls: ['Toro 1'], renspas: ['032010037431649', 'Cena Pablo', 'Los Alejandros S.A.'], lastTubeNumber: 0, lastTubeDate: '' };
+        const defaultConf: AppConfig = { 
+          id: 'main', 
+          colors: ['Negro', 'Colorado', 'Pampa'], 
+          bulls: ['Toro 1'], 
+          renspas: ['032010037431649', 'Cena Pablo', 'Los Alejandros S.A.'], 
+          rodeos: defaultRodeos,
+          lastTubeNumber: 0, 
+          lastTubeDate: '' 
+        };
         await setDoc(docRef, defaultConf);
         return defaultConf;
       }
@@ -204,9 +220,20 @@ export class Database {
           } else if (!conf.renspas.includes('032010037431649')) {
             conf.renspas = ['032010037431649', ...conf.renspas];
           }
+          if (!conf.rodeos || conf.rodeos.length === 0) {
+            conf.rodeos = defaultRodeos;
+          }
           resolve(conf);
         } else {
-          resolve({ id: 'main', colors: ['Negro', 'Colorado', 'Pampa'], bulls: ['Toro 1'], renspas: ['032010037431649', 'Cena Pablo', 'Los Alejandros S.A.'], lastTubeNumber: 0, lastTubeDate: '' });
+          resolve({ 
+            id: 'main', 
+            colors: ['Negro', 'Colorado', 'Pampa'], 
+            bulls: ['Toro 1'], 
+            renspas: ['032010037431649', 'Cena Pablo', 'Los Alejandros S.A.'], 
+            rodeos: defaultRodeos,
+            lastTubeNumber: 0, 
+            lastTubeDate: '' 
+          });
         }
       };
       req.onerror = () => reject(req.error);
@@ -334,6 +361,58 @@ export class Database {
         novStore.put(updatedNov);
       }
     });
+  }
+
+  async getAnimalsByRodeo(rodeoName: string): Promise<Animal[]> {
+    const all = await this.getAllAnimals();
+    if (!rodeoName || rodeoName === '__SIN_RODEO__') {
+      return all.filter(a => !a.rodeo || a.rodeo.trim() === '');
+    }
+    return all.filter(a => a.rodeo === rodeoName);
+  }
+
+  async moveAnimalsToRodeo(animalIds: string[], targetRodeo: string): Promise<void> {
+    if (animalIds.length === 0) return;
+    const all = await this.getAllAnimals();
+    const toUpdate = all.filter(a => animalIds.includes(a.id));
+
+    if (this.currentUser) {
+      const batch = writeBatch(dbFirestore);
+      for (const animal of toUpdate) {
+        const updated = { ...animal, rodeo: targetRodeo };
+        batch.set(this.getAnimalDoc(this.currentUser.uid, animal.id), updated);
+      }
+      await batch.commit();
+      return;
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      if (!this.db) return reject(new Error('DB not initialized'));
+      const tx = this.db.transaction('animals', 'readwrite');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      const store = tx.objectStore('animals');
+      for (const animal of toUpdate) {
+        store.put({ ...animal, rodeo: targetRodeo });
+      }
+    });
+  }
+
+  async renameRodeo(oldName: string, newName: string): Promise<void> {
+    if (!oldName || !newName || oldName === newName) return;
+    // 1. Update config
+    const conf = await this.getConfig();
+    const updatedRodeos = conf.rodeos.map(r => r === oldName ? newName : r);
+    if (!updatedRodeos.includes(newName)) {
+      updatedRodeos.push(newName);
+    }
+    await this.saveConfig({ ...conf, rodeos: updatedRodeos });
+
+    // 2. Update animals belonging to this rodeo
+    const animalsInRodeo = await this.getAnimalsByRodeo(oldName);
+    if (animalsInRodeo.length > 0) {
+      await this.moveAnimalsToRodeo(animalsInRodeo.map(a => a.id), newName);
+    }
   }
 
   // --- NOVEDADES ---

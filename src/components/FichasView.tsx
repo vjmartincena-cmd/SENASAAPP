@@ -12,6 +12,7 @@ export function FichasView({ config }: FichasViewProps) {
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRenspa, setFilterRenspa] = useState('__ALL__');
+  const [filterRodeo, setFilterRodeo] = useState('__ALL__');
   
   // Ficha Form State
   const [id, setId] = useState('');
@@ -19,6 +20,7 @@ export function FichasView({ config }: FichasViewProps) {
   const [breed, setBreed] = useState('AA');
   const [color, setColor] = useState(config.colors[0] || '');
   const [renspa, setRenspa] = useState(config.renspas[0] || '');
+  const [rodeo, setRodeo] = useState(config.rodeos?.[0] || 'General');
   const [birthDate, setBirthDate] = useState('');
   
   // Modal de historial
@@ -52,7 +54,7 @@ export function FichasView({ config }: FichasViewProps) {
   // Refocus scanner ONLY when dropdowns (not text inputs) change
   useEffect(() => {
     scannerRef.current?.focus();
-  }, [sex, breed, color, renspa]);
+  }, [sex, breed, color, renspa, rodeo]);
 
   const handleScan = async (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -74,6 +76,7 @@ export function FichasView({ config }: FichasViewProps) {
         setBreed(existing.breed);
         setColor(existing.color);
         setRenspa(existing.renspa || config.renspas[0]);
+        setRodeo(existing.rodeo || config.rodeos?.[0] || 'General');
         setBirthDate(existing.birthDate);
       } else {
         const animal: Animal = {
@@ -82,6 +85,7 @@ export function FichasView({ config }: FichasViewProps) {
           breed,
           color,
           renspa,
+          rodeo,
           birthDate,
           createdAt: Date.now(),
           reportedToSenasa: false
@@ -100,6 +104,7 @@ export function FichasView({ config }: FichasViewProps) {
     setBreed(animal.breed);
     setColor(animal.color);
     setRenspa(animal.renspa || config.renspas[0]);
+    setRodeo(animal.rodeo || config.rodeos?.[0] || 'General');
     setBirthDate(animal.birthDate || '');
     setIsEditing(true);
     setOriginalId(animal.id);
@@ -133,6 +138,7 @@ export function FichasView({ config }: FichasViewProps) {
         breed,
         color,
         renspa,
+        rodeo,
         birthDate,
         createdAt: existing ? existing.createdAt : Date.now(),
         reportedToSenasa: existing ? existing.reportedToSenasa : false
@@ -176,16 +182,29 @@ export function FichasView({ config }: FichasViewProps) {
     return <span>{(n as { type: string }).type}</span>;
   };
 
-  const filteredAnimals = animals.filter(a =>
-    a.id.includes(searchTerm) &&
-    (filterRenspa === '__ALL__' || a.renspa === filterRenspa)
-  );
+  const allAvailableRodeos = Array.from(
+    new Set([
+      ...(config.rodeos || []),
+      ...animals.map(a => a.rodeo).filter((r): r is string => Boolean(r && r.trim()))
+    ])
+  ).sort((a, b) => a.localeCompare(b));
+
+  const filteredAnimals = animals.filter(a => {
+    const matchesSearch = a.id.includes(searchTerm);
+    const matchesRenspa = filterRenspa === '__ALL__' || a.renspa === filterRenspa;
+    const matchesRodeo = filterRodeo === '__ALL__' 
+      ? true 
+      : filterRodeo === '__SIN_RODEO__' 
+        ? (!a.rodeo || a.rodeo.trim() === '') 
+        : a.rodeo === filterRodeo;
+    return matchesSearch && matchesRenspa && matchesRodeo;
+  });
 
   const exportToExcel = () => {
     if (filteredAnimals.length === 0) return alert('No hay animales para exportar.');
     const rows: (string | number)[][] = [
-      ['Caravana', 'Sexo', 'Raza', 'Color', 'RENSPA', 'Nacimiento'],
-      ...filteredAnimals.map(a => [a.id, a.sex, a.breed, a.color, a.renspa || '', a.birthDate || '']),
+      ['Caravana', 'Rodeo', 'Sexo', 'Raza', 'Color', 'RENSPA', 'Nacimiento'],
+      ...filteredAnimals.map(a => [a.id, a.rodeo || 'Sin Asignar', a.sex, a.breed, a.color, a.renspa || '', a.birthDate || '']),
     ];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -241,16 +260,25 @@ export function FichasView({ config }: FichasViewProps) {
                 </div>
               </div>
 
-              <div className="form-group mb-4">
-                <label>Nacimiento (MM/YYYY)</label>
-                <input 
-                  type="text" 
-                  className="input-field" 
-                  placeholder="MM/YYYY"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  onFocus={(e) => e.stopPropagation()}
-                />
+              <div className="grid grid-cols-2 gap-4 mb-2">
+                <div className="form-group">
+                  <label>Rodeo / Lote</label>
+                  <select className="input-field" value={rodeo} onChange={(e) => setRodeo(e.target.value)}>
+                    <option value="">Sin Asignar</option>
+                    {allAvailableRodeos.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Nacimiento (MM/YYYY)</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    placeholder="MM/YYYY"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    onFocus={(e) => e.stopPropagation()}
+                  />
+                </div>
               </div>
 
               <div className="form-group relative">
@@ -301,12 +329,23 @@ export function FichasView({ config }: FichasViewProps) {
               </span>
             </h2>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              {/* Filtro Rodeo */}
+              <select
+                className="input-field"
+                value={filterRodeo}
+                onChange={e => setFilterRodeo(e.target.value)}
+                style={{ fontSize: '0.82rem', padding: '0.3rem 0.6rem', minWidth: '130px' }}
+              >
+                <option value="__ALL__">Todos los Rodeos</option>
+                <option value="__SIN_RODEO__">⚠️ Sin Rodeo</option>
+                {allAvailableRodeos.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
               {/* Filtro RENSPA */}
               <select
                 className="input-field"
                 value={filterRenspa}
                 onChange={e => setFilterRenspa(e.target.value)}
-                style={{ fontSize: '0.82rem', padding: '0.3rem 0.6rem', minWidth: '140px' }}
+                style={{ fontSize: '0.82rem', padding: '0.3rem 0.6rem', minWidth: '130px' }}
               >
                 <option value="__ALL__">Todas las RENSPA</option>
                 {config.renspas.map(r => <option key={r} value={r}>{r}</option>)}
@@ -351,6 +390,7 @@ export function FichasView({ config }: FichasViewProps) {
               <thead>
                 <tr>
                   <th>Caravana</th>
+                  <th>Rodeo</th>
                   <th>Sexo</th>
                   <th>Raza</th>
                   <th>Color</th>
@@ -370,6 +410,15 @@ export function FichasView({ config }: FichasViewProps) {
                       >
                         {a.id}
                       </button>
+                    </td>
+                    <td>
+                      {a.rodeo ? (
+                        <span style={{ background: 'rgba(37,99,235,0.15)', color: 'var(--accent)', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>
+                          {a.rodeo}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Sin Rodeo</span>
+                      )}
                     </td>
                     <td>{a.sex}</td>
                     <td>{a.breed}</td>
@@ -405,7 +454,7 @@ export function FichasView({ config }: FichasViewProps) {
                 <h2 className="text-xl font-bold text-accent">Historial del Animal</h2>
                 <p className="font-mono text-white text-lg">{selectedAnimal.id}</p>
                 <p className="text-sm text-muted">
-                  {selectedAnimal.sex} · {selectedAnimal.breed} · {selectedAnimal.color} · {selectedAnimal.renspa} · Nac: {selectedAnimal.birthDate || 'S/D'}
+                  Rodeo: <strong className="text-white">{selectedAnimal.rodeo || 'Sin Asignar'}</strong> · {selectedAnimal.sex} · {selectedAnimal.breed} · {selectedAnimal.color} · {selectedAnimal.renspa} · Nac: {selectedAnimal.birthDate || 'S/D'}
                 </p>
               </div>
               <button className="btn-icon text-muted hover:text-white" onClick={closeHistory}>

@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { HomeView } from './components/HomeView';
 import { SenasaExportView } from './components/SenasaExportView';
 import { FichasView } from './components/FichasView';
+import { RodeosView } from './components/RodeosView';
 import { NovedadesView } from './components/NovedadesView';
 import { InformesView } from './components/InformesView';
 import { BuscarVacaView } from './components/BuscarVacaView';
@@ -115,6 +116,7 @@ function App() {
   const renderView = () => {
     switch (activeTab) {
       case 'inicio': return <HomeView setActiveTab={setActiveTab} />;
+      case 'rodeos': return <RodeosView config={config} setConfig={setConfig} />;
       case 'senasa': return <SenasaExportView />;
       case 'fichas': return <FichasView config={config} />;
       case 'novedades': return <NovedadesView config={config} />;

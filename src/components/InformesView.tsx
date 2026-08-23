@@ -92,10 +92,10 @@ export function InformesView() {
     const rows: (string | number)[][] = [
       [`SANIDAD — ${selectedSesion?.label || formatDate(selectedSesion?.date || '')}`],
       [],
-      ['Nº Tubo', 'Caravana', 'Raza', 'Color', 'RENSPA', 'Fecha'],
+      ['Nº Tubo', 'Caravana', 'Rodeo', 'Raza', 'Color', 'RENSPA', 'Fecha'],
       ...san.map((s, i) => {
         const a = getAnimal(s.animalId);
-        return [i + 1, s.animalId, a?.breed || '', a?.color || '', a?.renspa || '', s.date];
+        return [i + 1, s.animalId, s.rodeo || a?.rodeo || 'Sin Asignar', a?.breed || '', a?.color || '', a?.renspa || '', s.date];
       }),
     ];
     downloadXLS([{ name: 'Sanidad', data: rows }], `Sanidad_${selectedSesion?.date || 'sesion'}.xlsx`);
@@ -108,10 +108,10 @@ export function InformesView() {
     const rows: (string | number)[][] = [
       [`INSEMINACIÓN IA — ${selectedSesion?.label || formatDate(selectedSesion?.date || '')}`],
       [],
-      ['Caravana', 'RENSPA', 'Toro', 'Fecha'],
+      ['Caravana', 'Rodeo', 'RENSPA', 'Toro', 'Fecha'],
       ...ias.map(i => {
         const a = getAnimal(i.animalId);
-        return [i.animalId, a?.renspa || '', i.bull, i.date];
+        return [i.animalId, i.rodeo || a?.rodeo || 'Sin Asignar', a?.renspa || '', i.bull, i.date];
       }),
     ];
     downloadXLS([{ name: 'Inseminaciones', data: rows }], `IA_${selectedSesion?.date || 'sesion'}.xlsx`);
@@ -141,10 +141,10 @@ export function InformesView() {
     ];
 
     const buildRows = (list: NovedadTacto[]) => {
-      const header: (string | number)[] = ['Caravana', 'RENSPA', 'Resultado', 'Observación', 'Fecha'];
+      const header: (string | number)[] = ['Caravana', 'Rodeo', 'RENSPA', 'Resultado', 'Observación', 'Fecha'];
       return [header, ...list.map(t => {
         const a = getAnimal(t.animalId);
-        return [t.animalId, a?.renspa || '', t.result, t.observation || '', t.date];
+        return [t.animalId, t.rodeo || a?.rodeo || 'Sin Asignar', a?.renspa || '', t.result, t.observation || '', t.date];
       })];
     };
 
@@ -295,6 +295,7 @@ export function InformesView() {
                       <tr>
                         <th>Nº</th>
                         <th>Caravana</th>
+                        <th>Rodeo</th>
                         <th>Raza</th>
                         <th>Color</th>
                         <th>RENSPA</th>
@@ -308,6 +309,11 @@ export function InformesView() {
                           <tr key={s.id}>
                             <td style={{ color: '#34d399', fontWeight: 700 }}>#{i + 1}</td>
                             <td className="font-mono">{s.animalId}</td>
+                            <td>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 600 }}>
+                                {s.rodeo || a?.rodeo || '—'}
+                              </span>
+                            </td>
                             <td>{a?.breed || '—'}</td>
                             <td>{a?.color || '—'}</td>
                             <td>{a?.renspa || '—'}</td>
@@ -361,6 +367,7 @@ export function InformesView() {
                       <tr>
                         <th>Nº</th>
                         <th>Caravana</th>
+                        <th>Rodeo</th>
                         <th>RENSPA</th>
                         <th>Toro</th>
                         <th>Hora</th>
@@ -373,6 +380,11 @@ export function InformesView() {
                           <tr key={ia.id}>
                             <td style={{ color: '#60a5fa', fontWeight: 700 }}>{i + 1}</td>
                             <td className="font-mono">{ia.animalId}</td>
+                            <td>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 600 }}>
+                                {ia.rodeo || a?.rodeo || '—'}
+                              </span>
+                            </td>
                             <td>{a?.renspa || '—'}</td>
                             <td style={{ color: '#60a5fa' }}>{ia.bull}</td>
                             <td style={{ color: '#64748b', fontSize: '0.78rem' }}>{formatTime(ia.timestamp)}</td>
@@ -456,6 +468,7 @@ export function InformesView() {
                       <tr>
                         <th>Nº</th>
                         <th>Caravana</th>
+                        <th>Rodeo</th>
                         <th>RENSPA</th>
                         <th>Resultado</th>
                         <th>Observación</th>
@@ -474,6 +487,11 @@ export function InformesView() {
                           <tr key={t.id}>
                             <td style={{ fontWeight: 700, color: '#f472b6' }}>{i + 1}</td>
                             <td className="font-mono">{t.animalId}</td>
+                            <td>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 600 }}>
+                                {t.rodeo || a?.rodeo || '—'}
+                              </span>
+                            </td>
                             <td>{a?.renspa || '—'}</td>
                             <td>
                               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: clr, background: bg, padding: '0.15rem 0.5rem', borderRadius: '99px' }}>
