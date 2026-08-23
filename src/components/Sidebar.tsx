@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { auth } from '../firebaseConfig';
 import { signOut } from 'firebase/auth';
+import { InstallPrompt } from './InstallPrompt';
 
 interface SidebarProps {
   activeTab: string;
@@ -46,7 +47,7 @@ export function Sidebar({ activeTab, setActiveTab, isOpen, onClose }: SidebarPro
       <div className="sidebar-header">
         <h2>Gestión Ganadera</h2>
       </div>
-      <nav className="sidebar-nav" style={{ flex: 1 }}>
+      <nav className="sidebar-nav" style={{ flex: 1, overflowY: 'auto' }}>
         {navItems.map((item) => (
           <button
             key={item.id}
@@ -63,6 +64,7 @@ export function Sidebar({ activeTab, setActiveTab, isOpen, onClose }: SidebarPro
       </nav>
       
       <div style={{ padding: '1rem', borderTop: '1px solid var(--border)' }}>
+        <InstallPrompt isSidebar={true} />
         <button
           className="nav-btn"
           style={{ width: '100%', color: 'var(--danger)' }}

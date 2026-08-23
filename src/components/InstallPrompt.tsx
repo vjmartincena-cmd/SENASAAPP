@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Download } from 'lucide-react';
 
-export function InstallPrompt() {
+export function InstallPrompt({ isSidebar = false }: { isSidebar?: boolean }) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -15,9 +15,7 @@ export function InstallPrompt() {
     setIsStandalone(isAppStandalone);
 
     const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevenir que Chrome muestre el prompt automáticamente al inicio
       e.preventDefault();
-      // Guardar el evento para poder dispararlo luego
       setDeferredPrompt(e);
       setIsInstallable(true);
     };
@@ -25,7 +23,6 @@ export function InstallPrompt() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     window.addEventListener('appinstalled', () => {
-      // Limpiar luego de la instalación
       setDeferredPrompt(null);
       setIsInstallable(false);
       setIsStandalone(true);
@@ -38,26 +35,27 @@ export function InstallPrompt() {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-    
-    // Mostrar el prompt nativo
     deferredPrompt.prompt();
-    
-    // Esperar la respuesta del usuario
     const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('El usuario aceptó la instalación');
-    } else {
-      console.log('El usuario rechazó la instalación');
-    }
-    
     setDeferredPrompt(null);
     setIsInstallable(false);
   };
 
-  // Si ya está instalada o no se puede instalar, no mostrar nada
   if (!isInstallable || isStandalone) {
     return null;
+  }
+
+  if (isSidebar) {
+    return (
+      <button
+        className="nav-btn"
+        style={{ width: '100%', color: 'var(--accent)', fontWeight: 'bold' }}
+        onClick={handleInstallClick}
+      >
+        <Download size={20} />
+        <span>Instalar App</span>
+      </button>
+    );
   }
 
   return (
@@ -71,7 +69,6 @@ export function InstallPrompt() {
         padding: '0.4rem 0.8rem',
         fontSize: '0.85rem',
         borderRadius: '20px',
-        marginRight: '1rem',
         background: 'var(--accent)',
         color: 'white',
         border: 'none',
