@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import { db, Animal, AppConfig, Novedad, NovedadSanidad, NovedadIA, NovedadTacto } from '../db';
+import { db, Animal, AppConfig, Novedad, NovedadSanidad, NovedadIA, NovedadIATF, NovedadTacto } from '../db';
 import { soundSystem } from '../sounds';
 import { ScanLine, Search, X, ClipboardList, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -174,6 +174,10 @@ export function FichasView({ config }: FichasViewProps) {
     if (n.type === 'IA') {
       const ia = n as NovedadIA;
       return <span>🐂 <strong>IA</strong> — Toro: {ia.bull}</span>;
+    }
+    if (n.type === 'IATF') {
+      const iatf = n as NovedadIATF;
+      return <span>🧬 <strong>Protocolo IATF</strong>{iatf.protocol ? ` — ${iatf.protocol}` : ''}</span>;
     }
     if (n.type === 'Tacto') {
       const t = n as NovedadTacto;
@@ -482,6 +486,7 @@ export function FichasView({ config }: FichasViewProps) {
                           <span className={`px-2 py-1 rounded text-xs font-bold border ${
                             n.type === 'Sanidad' ? 'bg-white text-blue-800 border-blue-800' :
                             n.type === 'IA' ? 'bg-white text-orange-900 border-orange-900' :
+                            n.type === 'IATF' ? 'bg-white text-purple-900 border-purple-900' :
                             'bg-white text-red-800 border-red-800'
                           }`}>
                             {n.type}

@@ -8,7 +8,8 @@ import {
   Skull,
   LogOut,
   Home,
-  Layers
+  Layers,
+  Workflow
 } from 'lucide-react';
 import { auth } from '../firebaseConfig';
 import { signOut } from 'firebase/auth';
@@ -24,9 +25,10 @@ interface SidebarProps {
 export function Sidebar({ activeTab, setActiveTab, isOpen, onClose }: SidebarProps) {
   const navItems = [
     { id: 'inicio', label: 'Inicio', icon: <Home size={20} /> },
+    { id: 'manga', label: 'Manga Combinada', icon: <Workflow size={20} /> },
+    { id: 'novedades', label: 'Novedades', icon: <Stethoscope size={20} /> },
     { id: 'rodeos', label: 'Rodeos', icon: <Layers size={20} /> },
     { id: 'fichas', label: 'Fichas de Animales', icon: <ClipboardList size={20} /> },
-    { id: 'novedades', label: 'Novedades', icon: <Stethoscope size={20} /> },
     { id: 'buscar', label: 'Buscar Vaca', icon: <Search size={20} /> },
     { id: 'informes', label: 'Informes', icon: <FileSpreadsheet size={20} /> },
     { id: 'muerte', label: 'Baja', icon: <Skull size={20} /> },
@@ -48,19 +50,37 @@ export function Sidebar({ activeTab, setActiveTab, isOpen, onClose }: SidebarPro
         <h2>Gestión Ganadera</h2>
       </div>
       <nav className="sidebar-nav" style={{ flex: 1, overflowY: 'auto' }}>
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            className={`nav-btn ${activeTab === item.id ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab(item.id);
-              onClose?.();
-            }}
-          >
-            {item.icon}
-            <span>{item.label}</span>
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const isMangaActive = item.id === 'manga' && Boolean(localStorage.getItem('senasa_active_manga_state'));
+
+          return (
+            <button
+              key={item.id}
+              className={`nav-btn ${activeTab === item.id ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab(item.id);
+                onClose?.();
+              }}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+              {isMangaActive && (
+                <span
+                  style={{
+                    marginLeft: 'auto',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: '#10b981',
+                    boxShadow: '0 0 8px #10b981',
+                    display: 'inline-block'
+                  }}
+                  title="Jornada de Manga en curso"
+                />
+              )}
+            </button>
+          );
+        })}
       </nav>
       
       <div style={{ padding: '1rem', borderTop: '1px solid var(--border)' }}>

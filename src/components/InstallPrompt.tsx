@@ -36,7 +36,7 @@ export function InstallPrompt({ isSidebar = false }: { isSidebar?: boolean }) {
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    await deferredPrompt.userChoice;
     setDeferredPrompt(null);
     setIsInstallable(false);
   };

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import { db, AppConfig, Animal, NovedadIA, Sesion, Novedad, NovedadType } from '../db';
+import { db, AppConfig, Animal, NovedadIA, NovedadIATF, Sesion, Novedad, NovedadType } from '../db';
 import { soundSystem } from '../sounds';
 import {
   ScanLine, Save, AlertTriangle, Hash, Plus, ChevronDown, ChevronRight,
@@ -17,13 +17,28 @@ const TAB_LABEL: Record<TabType, string> = {
   Sanidad: 'Sanidad',
   IA: 'Inseminación (IA)',
   Tacto: 'Tacto',
+  IATF: 'IATF',
 };
 
 const TAB_COLOR: Record<TabType, string> = {
   Sanidad: '#15803d',
   IA: '#1d4ed8',
   Tacto: '#8a1a49',
+  IATF: '#7c3aed',
 };
+
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    try {
+      return crypto.randomUUID();
+    } catch {}
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 function formatDate(d: string) {
   if (!d) return '';
@@ -42,15 +57,6 @@ export function NovedadesView({ config }: NovedadesViewProps) {
   // ── Sesión activa ──────────────────────────────────────────────────────────
   const [currentSession, setCurrentSession] = useState<Sesion | null>(null);
   const [sessionCount, setSessionCount] = useState(0);
-
-  // ── Modal inicio de sesión ─────────────────────────────────────────────────
-  const [showStartModal, setShowStartModal] = useState(false);
-  const [pendingTab, setPendingTab] = useState<TabType>('Sanidad');
-  const [modalDate, setModalDate] = useState('');
-  const [modalLabel, setModalLabel] = useState('');
-  const [modalTargetRodeo, setModalTargetRodeo] = useState('');
-  const [prevSessions, setPrevSessions] = useState<Sesion[]>([]);
-  const [loadingPrev, setLoadingPrev] = useState(false);
 
   // ── Escaneo y Modo de Confirmación ─────────────────────────────────────────
   const [rfid, setRfid] = useState('');
@@ -100,7 +106,6 @@ export function NovedadesView({ config }: NovedadesViewProps) {
   const [sessionNovedades, setSessionNovedades] = useState<Record<string, Novedad[]>>({});
 
   const scannerRef = useRef<HTMLInputElement>(null);
-  const modalDateRef = useRef<HTMLInputElement>(null);
 
   // ── Persist date ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -122,58 +127,16 @@ export function NovedadesView({ config }: NovedadesViewProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // ── Cargar historial de sesiones al montar ─────────────────────────────────
-  useEffect(() => {
-    loadAllSessions();
-  }, []);
-
   const loadAllSessions = async () => {
     const all = await db.getAllSesiones();
     all.sort((a, b) => b.startedAt - a.startedAt);
     setAllSessions(all);
   };
 
-  // ── Abrir modal de inicio de sesión ───────────────────────────────────────
-  const openStartModal = async (tab: TabType) => {
-    setPendingTab(tab);
-    setModalDate(new Date().toISOString().split('T')[0]);
-    setModalLabel('');
-    setModalTargetRodeo('');
-    setLoadingPrev(true);
-    setShowStartModal(true);
-
-    const sessions = await db.getSesionesByType(tab);
-    sessions.sort((a, b) => b.startedAt - a.startedAt);
-    setPrevSessions(sessions.slice(0, 5)); // mostrar las últimas 5
-    setLoadingPrev(false);
-
-    setTimeout(() => modalDateRef.current?.focus(), 120);
-  };
-
-  // ── Click en tab ──────────────────────────────────────────────────────────
-  const handleTabClick = (tab: TabType) => {
-    // Si es la misma tab y ya hay sesión activa, no hacer nada
-    if (tab === activeTab && currentSession) return;
-    openStartModal(tab);
-  };
-
-  // ── Iniciar NUEVA sesión ──────────────────────────────────────────────────
-  const startNewSession = async () => {
-    const sesion: Sesion = {
-      id: crypto.randomUUID(),
-      type: pendingTab,
-      date: modalDate,
-      startedAt: Date.now(),
-      count: 0,
-      label: modalLabel.trim() || undefined,
-      targetRodeo: modalTargetRodeo.trim() || undefined,
-    };
-    await db.saveSesion(sesion);
-
-    setDate(modalDate);
-    setActiveTab(pendingTab);
-    setCurrentSession(sesion);
-    setCurrentRodeo(modalTargetRodeo.trim());
+  // ── Cambiar a Tab sin crear sesión automáticamente ───────────────────────
+  const switchTabDirectly = async (tab: TabType) => {
+    setActiveTab(tab);
+    setCurrentSession(null);
     setSessionCount(0);
     setRfid('');
     setCurrentAnimal(null);
@@ -182,12 +145,66 @@ export function NovedadesView({ config }: NovedadesViewProps) {
     setLastScanFeedback(null);
     setIaWarning('');
     setTactoObs('');
-    setShowStartModal(false);
     await loadAllSessions();
+  };
+
+  // ── Cargar historial al montar ────────────────────────────────────────────
+  useEffect(() => {
+    loadAllSessions();
+  }, []);
+
+  // ── Click en tab ──────────────────────────────────────────────────────────
+  const handleTabClick = (tab: TabType) => {
+    if (tab === activeTab) return;
+    switchTabDirectly(tab);
+  };
+
+  // ── Cambio de fecha del evento ────────────────────────────────────────────
+  const handleDateChange = async (newDate: string) => {
+    setDate(newDate);
+    if (currentSession) {
+      const updated = { ...currentSession, date: newDate };
+      await db.saveSesion(updated);
+      setCurrentSession(updated);
+      await loadAllSessions();
+    }
+  };
+
+  // ── Cambio de rodeo de destino ────────────────────────────────────────────
+  const handleTargetRodeoChange = async (newRodeo: string) => {
+    setCurrentRodeo(newRodeo);
+    if (currentSession) {
+      const updated = { ...currentSession, targetRodeo: newRodeo.trim() || undefined };
+      await db.saveSesion(updated);
+      setCurrentSession(updated);
+    }
+  };
+
+  // ── Iniciar NUEVA sesión explícita ────────────────────────────────────────
+  const handleCreateExplicitNewSession = async () => {
+    const defaultLabel = `Sesión ${formatDate(date)}`;
+    const label = window.prompt('Nombre o etiqueta para la nueva sesión (opcional):', defaultLabel);
+    if (label === null) return;
+
+    const newSes: Sesion = {
+      id: generateUUID(),
+      type: activeTab,
+      date,
+      startedAt: Date.now(),
+      count: 0,
+      label: label.trim() || undefined,
+      targetRodeo: currentRodeo.trim() || undefined,
+    };
+    await db.saveSesion(newSes);
+    setCurrentSession(newSes);
+    setSessionCount(0);
+    setRfid('');
+    await loadAllSessions();
+    soundSystem.playSuccess();
     setTimeout(() => scannerRef.current?.focus(), 100);
   };
 
-  // ── Continuar sesión existente ────────────────────────────────────────────
+  // ── Continuar sesión existente desde el panel ─────────────────────────────
   const continueSession = async (ses: Sesion) => {
     setDate(ses.date);
     setActiveTab(ses.type);
@@ -201,7 +218,6 @@ export function NovedadesView({ config }: NovedadesViewProps) {
     setLastScanFeedback(null);
     setIaWarning('');
     setTactoObs('');
-    setShowStartModal(false);
     await loadAllSessions();
     setTimeout(() => scannerRef.current?.focus(), 100);
   };
@@ -224,8 +240,8 @@ export function NovedadesView({ config }: NovedadesViewProps) {
     }
 
     if (!currentSession) {
-      // No hay sesión activa, abrir modal
-      openStartModal(activeTab);
+      soundSystem.playError();
+      alert('Por favor seleccioná una sesión de la derecha o creá una nueva con el botón "+ Nueva sesión" antes de escanear.');
       return;
     }
 
@@ -280,10 +296,10 @@ export function NovedadesView({ config }: NovedadesViewProps) {
     setCurrentAnimal(animal);
     setAnimalPrevRodeo(animal.rodeo || 'Sin Asignar');
 
-    // Cargar antecedentes de IA para mostrar info en Tacto o IA
-    if (activeTab === 'Tacto' || activeTab === 'IA') {
+    // Cargar antecedentes de IA/IATF para mostrar info en Tacto, IA o IATF
+    if (activeTab === 'Tacto' || activeTab === 'IA' || activeTab === 'IATF') {
       const novedades = await db.getNovedadesByAnimal(animal.id);
-      const ias = novedades.filter(n => n.type === 'IA') as NovedadIA[];
+      const ias = novedades.filter(n => n.type === 'IA' || n.type === 'IATF') as (NovedadIA | NovedadIATF)[];
       if (ias.length > 0) {
         ias.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         const lastIA = ias[0];
@@ -293,9 +309,10 @@ export function NovedadesView({ config }: NovedadesViewProps) {
           (today.getFullYear() - iaDate.getFullYear()) * 12 +
           (today.getMonth() - iaDate.getMonth());
         if (months <= 9 && months >= 0) {
-          setLastIAData({ date: lastIA.date, bull: lastIA.bull });
+          const bullInfo = lastIA.bull || (lastIA.type === 'IATF' ? 'Protocolo IATF' : 'S/D');
+          setLastIAData({ date: lastIA.date, bull: bullInfo });
           setIaWarning(
-            `Tiene una IA hace ${months} mes${months !== 1 ? 'es' : ''} — Toro: ${lastIA.bull} (${formatDate(lastIA.date)})`
+            `Tiene una ${lastIA.type} hace ${months} mes${months !== 1 ? 'es' : ''} ${lastIA.bull ? `— Toro: ${lastIA.bull}` : ''} (${formatDate(lastIA.date)})`
           );
         } else {
           setLastIAData(null);
@@ -312,7 +329,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
       return;
     }
 
-    // Para IA y Sanidad: verificar si corresponde guardado automático o confirmación manual
+    // Para IA, IATF y Sanidad: verificar si corresponde guardado automático o confirmación manual
     const matchesFilter = !filterRodeo || (animal.rodeo || '') === filterRodeo;
     const shouldAutoSave = autoSaveScan && matchesFilter;
 
@@ -386,6 +403,8 @@ export function NovedadesView({ config }: NovedadesViewProps) {
         await db.saveNovedad({ ...baseNovedad, type: 'Sanidad', tubeNumber: newCount });
       } else if (activeTab === 'IA') {
         await db.saveNovedad({ ...baseNovedad, type: 'IA', bull });
+      } else if (activeTab === 'IATF') {
+        await db.saveNovedad({ ...baseNovedad, type: 'IATF' });
       } else if (activeTab === 'Tacto') {
         const finalResult = tactoResultOverride ?? tactoResult;
         await db.saveNovedad({
@@ -489,13 +508,13 @@ export function NovedadesView({ config }: NovedadesViewProps) {
       {/* ── Tabs + Contador de sesión ─────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div className="tabs">
-          {(['Sanidad', 'Tacto', 'IA'] as TabType[]).map(tab => (
+          {(['Sanidad', 'Tacto', 'IA', 'IATF'] as TabType[]).map(tab => (
             <button
               key={tab}
               className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
               onClick={() => handleTabClick(tab)}
             >
-              {tab === 'IA' ? 'Inseminación (IA)' : tab}
+              {TAB_LABEL[tab]}
             </button>
           ))}
         </div>
@@ -539,8 +558,8 @@ export function NovedadesView({ config }: NovedadesViewProps) {
 
           {/* Botón nueva sesión */}
           <button
-            onClick={() => openStartModal(activeTab)}
-            title="Nueva sesión"
+            onClick={handleCreateExplicitNewSession}
+            title="Iniciar nueva sesión con etiqueta"
             style={{
               display: 'flex', alignItems: 'center', gap: '0.4rem',
               background: 'rgba(52,211,153,0.08)',
@@ -570,29 +589,29 @@ export function NovedadesView({ config }: NovedadesViewProps) {
           <section className="glass-panel p-6">
             <h2 className="text-lg font-semibold mb-4 text-accent">Registrar {activeTab}</h2>
 
-            {/* Sin sesión activa */}
-            {!currentSession && (
+            {!currentSession ? (
               <div style={{
-                textAlign: 'center', padding: '2rem 1rem',
-                background: 'rgba(0,0,0,0.05)', borderRadius: '12px',
-                border: '1px dashed rgba(0,0,0,0.15)',
-                marginBottom: '1rem',
+                textAlign: 'center', padding: '2.5rem 1.5rem',
+                background: 'rgba(0,0,0,0.03)', borderRadius: '14px',
+                border: '1.5px dashed rgba(0,0,0,0.15)',
+                margin: '1rem 0',
               }}>
-                <Layers size={36} style={{ color: 'var(--text-color)', margin: '0 auto 0.75rem' }} />
-                <p style={{ color: 'var(--text-color)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                  No hay sesión activa
+                <Layers size={40} style={{ color: TAB_COLOR[activeTab], margin: '0 auto 0.75rem', opacity: 0.6 }} />
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-color)', marginBottom: '0.4rem' }}>
+                  Sin sesión activa
+                </h3>
+                <p style={{ color: 'var(--text-color)', marginBottom: '1.25rem', fontSize: '0.85rem', opacity: 0.8 }}>
+                  Hacé clic en una sesión de la derecha para continuarla, o creá una nueva con el botón de abajo.
                 </p>
                 <button
                   className="btn btn-primary"
-                  onClick={() => openStartModal(activeTab)}
-                  style={{ fontSize: '0.9rem' }}
+                  onClick={handleCreateExplicitNewSession}
+                  style={{ fontSize: '0.92rem', padding: '0.65rem 1.25rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                 >
-                  <Plus size={16} /> Iniciar sesión
+                  <Plus size={18} /> Iniciar Nueva Sesión
                 </button>
               </div>
-            )}
-
-            {currentSession && (
+            ) : (
               <>
                 <div className="form-group mb-4">
                   <label>Fecha del Evento</label>
@@ -600,35 +619,35 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                     type="date"
                     className="input-field"
                     value={date}
-                    onChange={e => setDate(e.target.value)}
+                    onChange={e => handleDateChange(e.target.value)}
                   />
                 </div>
 
-                <div className="form-group mb-4">
-                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Rodeo de Destino (Opcional)</span>
-                    {currentRodeo.trim() && (
-                      <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600 }}>
-                        Asignación automática activa
-                      </span>
-                    )}
-                  </label>
-                  <input
-                    type="text"
-                    list="active-rodeos-list"
-                    className="input-field"
-                    placeholder="Ej. 1° IA de 2026, Rodeo 1, Vaquillonas..."
-                    value={currentRodeo}
-                    onChange={e => setCurrentRodeo(e.target.value)}
-                  />
-                  <datalist id="active-rodeos-list">
-                    {(config.rodeos || []).map(r => (
-                      <option key={r} value={r} />
-                    ))}
-                  </datalist>
-                </div>
+            <div className="form-group mb-4">
+              <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Rodeo de Destino (Opcional)</span>
+                {currentRodeo.trim() && (
+                  <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600 }}>
+                    Asignación automática activa
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                list="active-rodeos-list"
+                className="input-field"
+                placeholder="Ej. 1° IA de 2026, Rodeo 1, Vaquillonas..."
+                value={currentRodeo}
+                onChange={e => handleTargetRodeoChange(e.target.value)}
+              />
+              <datalist id="active-rodeos-list">
+                {(config.rodeos || []).map(r => (
+                  <option key={r} value={r} />
+                ))}
+              </datalist>
+            </div>
 
-                {/* Selector de toro: siempre visible en IA, antes de escanear */}
+                {/* Selector de toro: solo visible en IA, antes de escanear */}
                 {activeTab === 'IA' && (
                   <div className="form-group mb-5" style={{
                     background: 'rgba(96,165,250,0.07)',
@@ -1000,6 +1019,18 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                       </>
                     )}
 
+                    {/* Info específica de IATF */}
+                    {activeTab === 'IATF' && (
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-color)', marginBottom: '0.8rem' }}>
+                        <span>Registro: <strong style={{ color: '#a855f7' }}>Inicio de Protocolo IATF</strong></span>
+                        {currentRodeo.trim() && (
+                          <span style={{ display: 'block', marginTop: '0.2rem', color: '#10b981', fontWeight: 600 }}>
+                            Pasará al rodeo: &quot;{currentRodeo.trim()}&quot;
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     {/* Info específica de Sanidad */}
                     {activeTab === 'Sanidad' && (
                       <div style={{ fontSize: '0.85rem', color: 'var(--text-color)', marginBottom: '0.8rem' }}>
@@ -1014,7 +1045,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                         className="btn btn-primary"
                         style={{ flex: 2, padding: '0.75rem', fontSize: '0.92rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                       >
-                        <Check size={18} /> Confirmar {activeTab === 'IA' ? 'Inseminación' : 'Sanidad'}
+                        <Check size={18} /> Confirmar {activeTab === 'IA' ? 'Inseminación' : activeTab === 'IATF' ? 'IATF' : 'Sanidad'}
                       </button>
                       <button
                         onClick={handleCancelManualScan}
@@ -1049,7 +1080,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
             marginBottom: '0.25rem',
           }}>
             <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-color)' }}>
-              Sesiones de {activeTab === 'IA' ? 'Inseminación (IA)' : activeTab}
+              Sesiones de {TAB_LABEL[activeTab]}
             </h2>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-color)' }}>
               {panelSessions.length} sesión{panelSessions.length !== 1 ? 'es' : ''}
@@ -1266,7 +1297,7 @@ export function NovedadesView({ config }: NovedadesViewProps) {
                                 </span>
                               );
                             })()}
-                            {nov.type === 'IA' && (
+                            {(nov.type === 'IA' || nov.type === 'IATF') && (
                               <span style={{ fontSize: '0.72rem', color: 'var(--text-color)' }}>{nov.bull}</span>
                             )}
                             {/* Hora */}
@@ -1347,217 +1378,6 @@ export function NovedadesView({ config }: NovedadesViewProps) {
               <button className="btn btn-danger w-1/3" onClick={() => setShowAnimalModal(false)}>Cancelar</button>
               <button className="btn btn-primary w-2/3" onClick={submitNewAnimal} autoFocus>
                 <Save size={18} /> Guardar y Continuar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ══ MODAL: Inicio de Sesión ═════════════════════════════════════════ */}
-      {showStartModal && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50"
-          style={{ background: 'rgba(0,0,0,0.5)' }}
-        >
-          <div style={{
-            width: '100%', maxWidth: '480px',
-            background: '#ffffff',
-            border: `2px solid ${TAB_COLOR[pendingTab]}50`,
-            borderRadius: '20px',
-            boxShadow: `0 0 60px ${TAB_COLOR[pendingTab]}25`,
-            overflow: 'hidden',
-          }}>
-            {/* Header del modal */}
-            <div style={{
-              padding: '1.5rem 1.75rem 1.2rem',
-              borderBottom: '1px solid rgba(0,0,0,0.15)',
-              background: `linear-gradient(135deg, ${TAB_COLOR[pendingTab]}10 0%, transparent 100%)`,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.3rem' }}>
-                <div style={{
-                  width: '10px', height: '10px',
-                  background: TAB_COLOR[pendingTab],
-                  borderRadius: '50%',
-                  boxShadow: `0 0 8px ${TAB_COLOR[pendingTab]}`,
-                }} />
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-color)' }}>
-                  {TAB_LABEL[pendingTab]}
-                </h2>
-              </div>
-              <p style={{ color: 'var(--text-color)', fontSize: '0.85rem', marginLeft: '1.6rem' }}>
-                Iniciá una nueva sesión o continuá una anterior
-              </p>
-            </div>
-
-            <div style={{ padding: '1.5rem 1.75rem' }}>
-              {/* ── Nueva Sesión ──────────────────────────────────── */}
-              <div style={{
-                background: 'rgba(0,0,0,0.05)',
-                border: '1px solid rgba(0,0,0,0.15)',
-                borderRadius: '14px',
-                padding: '1.2rem',
-                marginBottom: '1.25rem',
-              }}>
-                <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-color)', marginBottom: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Plus size={15} style={{ color: TAB_COLOR[pendingTab] }} /> Nueva sesión
-                </h3>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                  <div className="form-group">
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-color)' }}>Fecha</label>
-                    <input
-                      ref={modalDateRef}
-                      type="date"
-                      className="input-field"
-                      value={modalDate}
-                      onChange={e => setModalDate(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') startNewSession(); }}
-                      style={{ fontSize: '0.9rem' }}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-color)' }}>Etiqueta (opcional)</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="ej: Mañana, Corral 1..."
-                      value={modalLabel}
-                      onChange={e => setModalLabel(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') startNewSession(); }}
-                      style={{ fontSize: '0.9rem' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: '1rem' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-color)', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Rodeo de Destino (Opcional)</span>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--accent)' }}>Asigna automáticamente al escanear</span>
-                  </label>
-                  <input
-                    type="text"
-                    list="modal-rodeos-list"
-                    className="input-field"
-                    placeholder="ej: 1° IA de 2026, Rodeo 1, Vaquillonas..."
-                    value={modalTargetRodeo}
-                    onChange={e => setModalTargetRodeo(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') startNewSession(); }}
-                    style={{ fontSize: '0.9rem' }}
-                  />
-                  <datalist id="modal-rodeos-list">
-                    {(config.rodeos || []).map(r => (
-                      <option key={r} value={r} />
-                    ))}
-                  </datalist>
-                </div>
-
-                <button
-                  onClick={startNewSession}
-                  style={{
-                    width: '100%',
-                    background: `linear-gradient(135deg, ${TAB_COLOR[pendingTab]}cc, ${TAB_COLOR[pendingTab]}88)`,
-                    border: 'none', borderRadius: '10px',
-                    padding: '0.65rem',
-                    color: '#000', fontWeight: 700, fontSize: '0.95rem',
-                    cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                    transition: 'opacity 0.2s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
-                  onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-                >
-                  <Plus size={16} /> Iniciar nueva sesión
-                </button>
-              </div>
-
-              {/* ── Sesiones anteriores ───────────────────────────── */}
-              <div>
-                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-color)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Clock size={13} /> Sesiones anteriores de {pendingTab === 'IA' ? 'Inseminación (IA)' : pendingTab}
-                </h3>
-
-                {loadingPrev && (
-                  <p style={{ color: 'var(--text-color)', fontSize: '0.82rem', padding: '0.5rem 0' }}>Cargando...</p>
-                )}
-
-                {!loadingPrev && prevSessions.length === 0 && (
-                  <p style={{ color: 'var(--text-color)', fontSize: '0.82rem', padding: '0.5rem 0' }}>
-                    No hay sesiones anteriores.
-                  </p>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', maxHeight: '230px', overflowY: 'auto' }}>
-                  {prevSessions.map(ses => (
-                    <button
-                      key={ses.id}
-                      onClick={() => continueSession(ses)}
-                      style={{
-                        width: '100%', textAlign: 'left',
-                        background: 'rgba(0,0,0,0.05)',
-                        border: '1px solid rgba(0,0,0,0.15)',
-                        borderRadius: '10px',
-                        padding: '0.7rem 0.9rem',
-                        cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '0.75rem',
-                        transition: 'background 0.18s, border-color 0.18s',
-                        color: 'inherit',
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = `${TAB_COLOR[pendingTab]}18`;
-                        e.currentTarget.style.borderColor = `${TAB_COLOR[pendingTab]}40`;
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = 'rgba(0,0,0,0.05)';
-                        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)';
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-color)', marginBottom: '0.15rem' }}>
-                          {ses.label || `Sesión del ${formatDate(ses.date)}`}
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-color)' }}>
-                          <span><Calendar size={10} style={{ display: 'inline', marginRight: '0.2rem' }} />{formatDate(ses.date)}</span>
-                          <span><Clock size={10} style={{ display: 'inline', marginRight: '0.2rem' }} />{formatTime(ses.startedAt)}</span>
-                        </div>
-                      </div>
-                      <div style={{
-                        background: `${TAB_COLOR[pendingTab]}18`,
-                        border: `1px solid ${TAB_COLOR[pendingTab]}35`,
-                        borderRadius: '8px',
-                        padding: '0.2rem 0.6rem',
-                        color: TAB_COLOR[pendingTab],
-                        fontWeight: 800,
-                        fontSize: '1rem',
-                        minWidth: '2.5rem',
-                        textAlign: 'center',
-                      }}>
-                        {ses.count}
-                      </div>
-                      <ArrowRight size={14} style={{ color: 'var(--text-color)', flexShrink: 0 }} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Cancelar */}
-              <button
-                onClick={() => setShowStartModal(false)}
-                style={{
-                  marginTop: '1rem',
-                  width: '100%',
-                  background: 'transparent',
-                  border: '1px solid rgba(0,0,0,0.15)',
-                  borderRadius: '10px',
-                  padding: '0.55rem',
-                  color: 'var(--text-color)',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-              >
-                Cancelar
               </button>
             </div>
           </div>

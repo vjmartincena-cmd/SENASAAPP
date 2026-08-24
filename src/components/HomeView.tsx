@@ -53,11 +53,19 @@ export function HomeView({ setActiveTab }: HomeViewProps) {
 
       <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-color)', marginBottom: '1rem' }}>Accesos Rápidos</h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="glass-panel p-6 text-center" style={{ cursor: 'pointer', transition: 'all 0.2s', borderTop: '4px solid #8b5cf6' }} onClick={() => setActiveTab?.('manga')}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.8rem', color: '#8b5cf6' }}>
+            <Stethoscope size={32} />
+          </div>
+          <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-color)' }}>Manga Combinada</h4>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-color)', opacity: 0.7, marginTop: '0.5rem' }}>Trabajos simultáneos y condicionales en manga.</p>
+        </div>
+
         <div className="glass-panel p-6 text-center" style={{ cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setActiveTab?.('novedades')}>
           <Stethoscope size={32} style={{ color: '#1d4ed8', margin: '0 auto 1rem' }} />
-          <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-color)' }}>Registrar Sanidad</h4>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-color)', opacity: 0.7, marginTop: '0.5rem' }}>Abrir módulo de novedades y eventos.</p>
+          <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-color)' }}>Novedades</h4>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-color)', opacity: 0.7, marginTop: '0.5rem' }}>Sanidad, Tacto, IA e IATF individual.</p>
         </div>
 
         <div className="glass-panel p-6 text-center" style={{ cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setActiveTab?.('buscar')}>

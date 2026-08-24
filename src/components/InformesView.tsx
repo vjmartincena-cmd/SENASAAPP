@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { db, NovedadSanidad, NovedadIA, NovedadTacto, Sesion } from '../db';
-import { FileText, Download, ChevronDown, Calendar, Layers, BarChart3 } from 'lucide-react';
+import { db, NovedadSanidad, NovedadIA, NovedadIATF, NovedadTacto, Sesion } from '../db';
+import { FileText, Download, ChevronDown, Calendar, Layers, BarChart3, Dna } from 'lucide-react';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function formatDate(d: string) {
@@ -35,7 +35,7 @@ function StatCard({ label, value, color, sub }: { label: string; value: string |
 // ── Componente principal ───────────────────────────────────────────────────────
 export function InformesView() {
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
-  const [activeTab, setActiveTab] = useState<'Sanidad' | 'IA' | 'Tacto' | 'SENASA'>('Sanidad');
+  const [activeTab, setActiveTab] = useState<'Sanidad' | 'IA' | 'IATF' | 'Tacto' | 'SENASA'>('Sanidad');
 
   // Sesiones filtradas por tab
   const [selectedSesionId, setSelectedSesionId] = useState('');
@@ -115,6 +115,22 @@ export function InformesView() {
       }),
     ];
     downloadXLS([{ name: 'Inseminaciones', data: rows }], `IA_${selectedSesion?.date || 'sesion'}.xlsx`);
+  };
+
+  // ── Export IATF ───────────────────────────────────────────────────────────
+  const exportIATF = () => {
+    if (!selectedSesionId || previewData.length === 0) return alert('Seleccioná una sesión con datos.');
+    const iatfs = previewData as NovedadIATF[];
+    const rows: (string | number)[][] = [
+      [`PROTOCOLO IATF — ${selectedSesion?.label || formatDate(selectedSesion?.date || '')}`],
+      [],
+      ['Nº', 'Caravana', 'Rodeo', 'RENSPA', 'Raza', 'Color', 'Protocolo', 'Fecha'],
+      ...iatfs.map((i, idx) => {
+        const a = getAnimal(i.animalId);
+        return [idx + 1, i.animalId, i.rodeo || a?.rodeo || 'Sin Asignar', a?.renspa || '', a?.breed || '', a?.color || '', i.protocol || '', i.date];
+      }),
+    ];
+    downloadXLS([{ name: 'Protocolos IATF', data: rows }], `IATF_${selectedSesion?.date || 'sesion'}.xlsx`);
   };
 
   // ── Export Tacto ──────────────────────────────────────────────────────────
@@ -220,6 +236,7 @@ export function InformesView() {
   const tabs: { key: typeof activeTab; label: string }[] = [
     { key: 'Sanidad', label: '🧪 Sanidad' },
     { key: 'IA', label: '🐂 Inseminación (IA)' },
+    { key: 'IATF', label: '🧬 IATF' },
     { key: 'Tacto', label: '🤚 Tacto' },
     { key: 'SENASA', label: '📄 SENASA' },
   ];
@@ -388,6 +405,81 @@ export function InformesView() {
                             <td>{a?.renspa || '—'}</td>
                             <td style={{ color: '#60a5fa' }}>{ia.bull}</td>
                             <td style={{ color: '#64748b', fontSize: '0.78rem' }}>{formatTime(ia.timestamp)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── IATF tab ──────────────────────────────────────────────────────── */}
+      {activeTab === 'IATF' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-semibold mb-4" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Dna size={18} style={{ color: '#a855f7' }} /> Informe de IATF
+            </h2>
+            <SesionSelector />
+            {selectedSesionId && (
+              <button
+                className="btn"
+                style={{ backgroundColor: '#7c3aed', color: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                onClick={exportIATF}
+                disabled={previewData.length === 0}
+              >
+                <Download size={18} /> Exportar IATF (.xlsx)
+              </button>
+            )}
+          </div>
+
+          {/* Preview IATF */}
+          {selectedSesionId && (
+            <div className="glass-panel p-4">
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Calendar size={14} /> Vista previa — {selectedSesion?.label || formatDate(selectedSesion?.date || '')}
+                <span style={{ marginLeft: 'auto', fontSize: '0.78rem', color: '#64748b' }}>{previewData.length} animales</span>
+              </h3>
+              {loadingPreview ? (
+                <p style={{ color: '#475569', fontSize: '0.85rem' }}>Cargando...</p>
+              ) : previewData.length === 0 ? (
+                <p style={{ color: '#475569', fontSize: '0.85rem' }}>Sin registros en esta sesión.</p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="animals-table w-full">
+                    <thead>
+                      <tr>
+                        <th>Nº</th>
+                        <th>Caravana</th>
+                        <th>Rodeo</th>
+                        <th>Raza</th>
+                        <th>Color</th>
+                        <th>RENSPA</th>
+                        <th>Protocolo</th>
+                        <th>Hora</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(previewData as NovedadIATF[]).map((iatf, i) => {
+                        const a = getAnimal(iatf.animalId);
+                        return (
+                          <tr key={iatf.id}>
+                            <td style={{ color: '#a855f7', fontWeight: 700 }}>{i + 1}</td>
+                            <td className="font-mono">{iatf.animalId}</td>
+                            <td>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 600 }}>
+                                {iatf.rodeo || a?.rodeo || '—'}
+                              </span>
+                            </td>
+                            <td>{a?.breed || '—'}</td>
+                            <td>{a?.color || '—'}</td>
+                            <td>{a?.renspa || '—'}</td>
+                            <td style={{ color: '#94a3b8' }}>{iatf.protocol || '—'}</td>
+                            <td style={{ color: '#64748b', fontSize: '0.78rem' }}>{formatTime(iatf.timestamp)}</td>
                           </tr>
                         );
                       })}

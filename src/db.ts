@@ -24,7 +24,7 @@ export interface Animal {
   rodeo?: string; // Rodeo actual asignado
 }
 
-export type NovedadType = 'Sanidad' | 'IA' | 'Tacto';
+export type NovedadType = 'Sanidad' | 'IA' | 'Tacto' | 'IATF';
 
 export interface NovedadBase {
   id: string; // uuid
@@ -47,13 +47,19 @@ export interface NovedadIA extends NovedadBase {
   bull: string;
 }
 
+export interface NovedadIATF extends NovedadBase {
+  type: 'IATF';
+  protocol?: string;
+  bull?: string;
+}
+
 export interface NovedadTacto extends NovedadBase {
   type: 'Tacto';
   result: 'Preñada IA' | 'Preñada Repaso' | 'Vacía' | 'Rechazo';
   observation: string;
 }
 
-export type Novedad = NovedadSanidad | NovedadIA | NovedadTacto;
+export type Novedad = NovedadSanidad | NovedadIA | NovedadTacto | NovedadIATF;
 
 // ─── SESIÓN ────────────────────────────────────────────────────────────────
 export interface Sesion {
@@ -66,6 +72,69 @@ export interface Sesion {
   targetRodeo?: string;// Rodeo destino automático para los animales escaneados en esta sesión
 }
 
+export interface MangaStepConfig {
+  id: string;
+  name: string;
+  enabled: boolean;
+  type: 'Sanidad' | 'Tacto' | 'IA' | 'IATF' | 'Rodeo';
+  conditionMode: 'ALL' | 'SPECIFIC_RODEO' | 'SIN_RODEO' | 'MULTI_RODEO';
+  specificRodeo: string;
+  multiRodeos: string[];
+  sanidadTargetRodeo: string;
+  iaBull: string;
+  iaTargetRodeo: string;
+  iatfProtocol: string;
+  iatfTargetRodeo: string;
+  tactoTargetPreniadaIA: string;
+  tactoTargetPreniadaRepaso: string;
+  tactoTargetVacia: string;
+  tactoTargetRechazo: string;
+  rodeoTarget: string;
+}
+
+export interface SavedMangaRoutine {
+  id: string;
+  name: string;
+  createdAt: number;
+  steps: MangaStepConfig[];
+}
+
+export interface MangaHistoryEntry {
+  id: string;
+  timestamp: number;
+  animalId: string;
+  prevRodeo: string;
+  newRodeo: string;
+  stepSummaries: string[];
+}
+
+export interface MangaWorkflowConfig {
+  name: string;
+  date: string;
+  steps: MangaStepConfig[];
+}
+
+export interface MangaSesion {
+  id: string;
+  name: string;
+  date: string;
+  startedAt: number;
+  finishedAt?: number;
+  totalAnimals: number;
+  flowConfig: MangaWorkflowConfig;
+  stepSessions: Record<string, Sesion>;
+  stepCounts: Record<string, number>;
+  tactoStats: {
+    preniadaIA: number;
+    preniadaRepaso: number;
+    vacia: number;
+    rechazo: number;
+    total: number;
+  };
+  history: MangaHistoryEntry[];
+  status: 'active' | 'finished';
+}
+
 export interface AppConfig {
   id: string; // always 'main'
   colors: string[];
@@ -74,6 +143,7 @@ export interface AppConfig {
   rodeos: string[]; // Lista de rodeos predefinidos
   lastTubeNumber: number; // To keep track of the sequence for the current day
   lastTubeDate: string; // To reset tube number on a new day
+  savedMangaRoutines?: SavedMangaRoutine[];
 }
 
 // ─── PERFIL DE USUARIO GLOBAL ──────────────────────────────────────────────
@@ -86,7 +156,22 @@ export interface UserProfile {
 }
 
 const DB_NAME = 'SenasaCriaDB';
-const DB_VERSION = 2; // bumped to add 'sesiones' store + sessionId index
+const DB_VERSION = 3; // bumped to add 'manga_sesiones' store
+
+function cleanUndefined<T>(obj: T): T {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(cleanUndefined) as unknown as T;
+  if (typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key] = cleanUndefined(value);
+      }
+    }
+    return cleaned;
+  }
+  return obj;
+}
 
 export class Database {
   private db: IDBDatabase | null = null;
@@ -144,6 +229,13 @@ export class Database {
           sesOS.createIndex('date', 'date', { unique: false });
           sesOS.createIndex('startedAt', 'startedAt', { unique: false });
         }
+
+        // NEW in v3: manga_sesiones store
+        if (!db.objectStoreNames.contains('manga_sesiones')) {
+          const mSesOS = db.createObjectStore('manga_sesiones', { keyPath: 'id' });
+          mSesOS.createIndex('date', 'date', { unique: false });
+          mSesOS.createIndex('startedAt', 'startedAt', { unique: false });
+        }
       };
     });
   }
@@ -172,6 +264,12 @@ export class Database {
   }
   private getSesionesColl(userId: string) {
     return collection(dbFirestore, 'users', userId, 'sesiones');
+  }
+  private getMangaSesionDoc(userId: string, id: string) {
+    return doc(dbFirestore, 'users', userId, 'manga_sesiones', id);
+  }
+  private getMangaSesionesColl(userId: string) {
+    return collection(dbFirestore, 'users', userId, 'manga_sesiones');
   }
   private getConfigDoc(userId: string) {
     return doc(dbFirestore, 'users', userId, 'config', 'main');
@@ -243,7 +341,7 @@ export class Database {
   async saveConfig(config: AppConfig): Promise<void> {
     if (this.currentUser) {
       const docRef = this.getConfigDoc(this.currentUser.uid);
-      await setDoc(docRef, config);
+      await setDoc(docRef, cleanUndefined(config));
       return;
     }
 
@@ -259,7 +357,7 @@ export class Database {
   async saveAnimal(animal: Animal): Promise<void> {
     if (this.currentUser) {
       const docRef = this.getAnimalDoc(this.currentUser.uid, animal.id);
-      await setDoc(docRef, animal);
+      await setDoc(docRef, cleanUndefined(animal));
       return;
     }
 
@@ -380,7 +478,7 @@ export class Database {
       const batch = writeBatch(dbFirestore);
       for (const animal of toUpdate) {
         const updated = { ...animal, rodeo: targetRodeo };
-        batch.set(this.getAnimalDoc(this.currentUser.uid, animal.id), updated);
+        batch.set(this.getAnimalDoc(this.currentUser.uid, animal.id), cleanUndefined(updated));
       }
       await batch.commit();
       return;
@@ -419,7 +517,7 @@ export class Database {
   async saveNovedad(novedad: Novedad): Promise<void> {
     if (this.currentUser) {
       const docRef = this.getNovedadDoc(this.currentUser.uid, novedad.id);
-      await setDoc(docRef, novedad);
+      await setDoc(docRef, cleanUndefined(novedad));
       return;
     }
 
@@ -490,7 +588,7 @@ export class Database {
   async saveSesion(sesion: Sesion): Promise<void> {
     if (this.currentUser) {
       const docRef = this.getSesionDoc(this.currentUser.uid, sesion.id);
-      await setDoc(docRef, sesion);
+      await setDoc(docRef, cleanUndefined(sesion));
       return;
     }
 
@@ -581,6 +679,82 @@ export class Database {
       for (const nov of novedades) {
         novStore.delete(nov.id);
       }
+    });
+  }
+
+  // --- MANGA SESIONES ---
+  async saveMangaSesion(sesion: MangaSesion): Promise<void> {
+    if (this.currentUser) {
+      const docRef = this.getMangaSesionDoc(this.currentUser.uid, sesion.id);
+      await setDoc(docRef, cleanUndefined(sesion));
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      const store = this.getStore('manga_sesiones', 'readwrite');
+      const req = store.put(sesion);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getMangaSesion(id: string): Promise<MangaSesion | undefined> {
+    if (this.currentUser) {
+      const docRef = this.getMangaSesionDoc(this.currentUser.uid, id);
+      const docSnap = await getDoc(docRef);
+      return docSnap.exists() ? (docSnap.data() as MangaSesion) : undefined;
+    }
+
+    return new Promise((resolve, reject) => {
+      const store = this.getStore('manga_sesiones', 'readonly');
+      const req = store.get(id);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getAllMangaSesiones(): Promise<MangaSesion[]> {
+    if (this.currentUser) {
+      const collRef = this.getMangaSesionesColl(this.currentUser.uid);
+      const querySnapshot = await getDocs(collRef);
+      const list: MangaSesion[] = [];
+      querySnapshot.forEach((d) => list.push(d.data() as MangaSesion));
+      list.sort((a, b) => b.startedAt - a.startedAt);
+      return list;
+    }
+
+    return new Promise((resolve, reject) => {
+      const store = this.getStore('manga_sesiones', 'readonly');
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const list: MangaSesion[] = req.result || [];
+        list.sort((a, b) => b.startedAt - a.startedAt);
+        resolve(list);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async deleteMangaSesion(id: string): Promise<void> {
+    const ses = await this.getMangaSesion(id);
+    if (ses && ses.stepSessions) {
+      for (const childSes of Object.values(ses.stepSessions)) {
+        try {
+          await this.deleteSesion(childSes.id);
+        } catch {}
+      }
+    }
+
+    if (this.currentUser) {
+      await deleteDoc(this.getMangaSesionDoc(this.currentUser.uid, id));
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      const store = this.getStore('manga_sesiones', 'readwrite');
+      const req = store.delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
     });
   }
 
@@ -744,7 +918,7 @@ export class Database {
 
   async saveUserProfile(profile: UserProfile): Promise<void> {
     const docRef = doc(dbFirestore, 'app_users', profile.uid);
-    await setDoc(docRef, profile);
+    await setDoc(docRef, cleanUndefined(profile));
   }
 
   async getAllUserProfiles(): Promise<UserProfile[]> {
